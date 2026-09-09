@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fringes — shared minds</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #ffffff;
+      color: #111;
+      font-family: "Gill Sans", "Gill Sans MT", "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #title {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      font-size: 16px;
+      font-weight: 700;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    #command-list {
+      position: absolute;
+      top: 46px;
+      left: 20px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #aaa;
+      z-index: 2;
+      pointer-events: none;
+      max-width: 300px;
+    }
+
+    #command-list em {
+      color: #666;
+      font-style: normal;
+    }
+
+    #canvas-wrap {
+      flex: 1 1 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    #intro {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #ccc;
+      pointer-events: none;
+    }
+
+    #intro.hidden { display: none; }
+
+    #keyboard {
+      flex: 0 0 88px;
+      border-top: 1px solid #111;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    #thoughtForm {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    #thoughtInput {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 16px;
+      color: #111;
+    }
+
+    #thoughtInput::placeholder { color: #bbb; }
+
+    #keyboard button {
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 14px;
+      color: #111;
+      cursor: pointer;
+      padding: 6px 0;
+    }
+
+    #clearBtn { color: #888; }
+    #keyboard button:hover { opacity: 0.55; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="title">fringes</div>
+    <div id="command-list">
+      <div><em>type</em> — record a thought on the current branch</div>
+      <div><em>click</em> — continue from that fork</div>
+      <div>other branches recede slowly, then vanish</div>
+      <div><em>clear</em> — start over</div>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="thoughtCanvas"></canvas>
+      <div id="intro">type a thought to begin</div>
+    </div>
+
+    <div id="keyboard">
+      <form id="thoughtForm">
+        <input
+          id="thoughtInput"
+          type="text"
+          maxlength="90"
+          placeholder="type a thought…"
+          autocomplete="off"
+        />
+        <button type="submit" id="spawnBtn">enter</button>
+        <button type="button" id="clearBtn">clear</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
