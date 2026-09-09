@@ -14,7 +14,12 @@ const thoughtForm = document.getElementById("thoughtForm");
 const thoughtInput = document.getElementById("thoughtInput");
 const clearBtn = document.getElementById("clearBtn");
 const intro = document.getElementById("intro");
-const FONT = '"Gill Sans", "Gill Sans MT", "Trebuchet MS", sans-serif';
+const FONT = 'Georgia, "Palatino Linotype", Palatino, serif';
+const INK = "#2b241c";
+const DUST = "#8a7358";
+const STEM = "#b85c38";
+const TWIG = "#9a8460";
+const PAPER = "#efe4ce";
 
 let viewWidth = 0;
 let viewHeight = 0;
@@ -45,14 +50,14 @@ function nextBranchAngle(parentId) {
   if (n === 0) return Math.PI / 2;
   const k = Math.ceil(n / 2);
   const sign = n % 2 === 1 ? -1 : 1;
-  return Math.PI / 2 + sign * k * 0.7;
+  return Math.PI / 2 + sign * k * 0.9;
 }
 
 function createThought({ text, x, y, parentId }) {
   spawnCounter += 1;
   const parent = parentId != null ? thoughts.find((t) => t.id === parentId) : null;
   const angle = parent ? nextBranchAngle(parent.id) : 0;
-  const dist = 90;
+  const dist = 110;
   const px = x != null ? x : parent ? parent.x + Math.cos(angle) * dist : viewWidth / 2;
   const py = y != null ? y : parent ? parent.y + Math.sin(angle) * dist : viewHeight / 2;
 
@@ -61,18 +66,21 @@ function createThought({ text, x, y, parentId }) {
     text: text,
     x: px,
     y: py,
-    dx: (Math.random() * 2 - 1) * 0.12,
-    dy: (Math.random() * 2 - 1) * 0.12,
+    dx: 0,
+    dy: 0,
     size: 14,
     alpha: 0.95,
     noticed: false,
     parentId: parentId != null ? parentId : null,
     kind: "text",
+    branchAngle: angle,
     branchDist: dist,
+    homeX: px,
+    homeY: py,
     fadeAtSpawn: null,
     spawnIndex: spawnCounter,
     phase: Math.random() * Math.PI * 2,
-    bob: 0.006 + Math.random() * 0.004,
+    bob: 0.008 + Math.random() * 0.004,
   };
 }
 
@@ -133,18 +141,18 @@ function keepThoughtOnCanvas(thought) {
 
   if (thought.x - halfW < 8) {
     thought.x = 8 + halfW;
-    thought.dx = Math.abs(thought.dx);
+    thought.dx = Math.abs(thought.dx) * 0.2;
   } else if (thought.x + halfW > viewWidth - 8) {
     thought.x = viewWidth - 8 - halfW;
-    thought.dx = -Math.abs(thought.dx);
+    thought.dx = -Math.abs(thought.dx) * 0.2;
   }
 
   if (thought.y - halfH < 8) {
     thought.y = 8 + halfH;
-    thought.dy = Math.abs(thought.dy);
+    thought.dy = Math.abs(thought.dy) * 0.2;
   } else if (thought.y + halfH > viewHeight - 8) {
     thought.y = viewHeight - 8 - halfH;
-    thought.dy = -Math.abs(thought.dy);
+    thought.dy = -Math.abs(thought.dy) * 0.2;
   }
 }
 
@@ -229,32 +237,54 @@ canvas.addEventListener("click", (event) => {
 // Gentle drift + bounce, so the map feels alive but stays readable
 // ---------------------------------------------------------------------------
 function applyForces(thought) {
+  thought.phase += thought.bob;
+  const bobX = Math.sin(thought.phase) * 6;
+  const bobY = Math.cos(thought.phase * 0.8) * 4;
+
   const parent = thought.parentId != null
     ? thoughts.find((t) => t.id === thought.parentId)
     : null;
 
+  // Hold each fork in its own slot beside the parent so links cannot wind up.
+  let tx;
+  let ty;
   if (parent) {
-    const vx = thought.x - parent.x;
-    const vy = thought.y - parent.y;
-    const dist = Math.hypot(vx, vy) || 1;
-    const force = (dist - thought.branchDist) * 0.0012;
-    thought.dx -= (vx / dist) * force;
-    thought.dy -= (vy / dist) * force;
+    tx = parent.x + Math.cos(thought.branchAngle) * thought.branchDist + bobX;
+    ty = parent.y + Math.sin(thought.branchAngle) * thought.branchDist + bobY;
+  } else {
+    tx = thought.homeX + bobX;
+    ty = thought.homeY + bobY;
   }
 
-  // Slow bob — like a thought hovering, not bouncing around
-  thought.phase += thought.bob;
-  thought.dx += Math.sin(thought.phase) * 0.018;
-  thought.dy += Math.cos(thought.phase * 0.9) * 0.014;
+  thought.dx += (tx - thought.x) * 0.045;
+  thought.dy += (ty - thought.y) * 0.045;
+  thought.dx *= 0.82;
+  thought.dy *= 0.82;
 
-  thought.dx *= 0.985;
-  thought.dy *= 0.985;
-
-  const maxSpeed = 0.42;
+  const maxSpeed = 0.55;
   const speed = Math.hypot(thought.dx, thought.dy);
   if (speed > maxSpeed) {
     thought.dx *= maxSpeed / speed;
     thought.dy *= maxSpeed / speed;
+  }
+}
+
+function pushApart() {
+  for (let i = 0; i < thoughts.length; i++) {
+    for (let j = i + 1; j < thoughts.length; j++) {
+      const a = thoughts[i];
+      const b = thoughts[j];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy) || 0.001;
+      const min = 52;
+      if (dist >= min) continue;
+      const push = ((min - dist) / dist) * 0.5;
+      a.x -= dx * push * 0.5;
+      a.y -= dy * push * 0.5;
+      b.x += dx * push * 0.5;
+      b.y += dy * push * 0.5;
+    }
   }
 }
 
@@ -290,13 +320,18 @@ function drawLinks() {
     if (thought.parentId == null) continue;
     const parent = thoughts.find((t) => t.id === thought.parentId);
     if (!parent) continue;
+    const mx = (parent.x + thought.x) / 2;
+    const my = (parent.y + thought.y) / 2;
+    const cx = mx + (parent.y - thought.y) * 0.18;
+    const cy = my + (thought.x - parent.x) * 0.18;
     ctx.save();
-    ctx.globalAlpha = Math.min(parent.alpha, thought.alpha) * 0.35;
-    ctx.strokeStyle = "#999";
-    ctx.lineWidth = 0.7;
+    ctx.globalAlpha = Math.min(parent.alpha, thought.alpha) * 0.45;
+    ctx.strokeStyle = TWIG;
+    ctx.lineWidth = 1.15;
+    ctx.lineCap = "round";
     ctx.beginPath();
     ctx.moveTo(parent.x, parent.y);
-    ctx.lineTo(thought.x, thought.y);
+    ctx.quadraticCurveTo(cx, cy, thought.x, thought.y);
     ctx.stroke();
     ctx.restore();
   }
@@ -308,15 +343,29 @@ function drawThought(thought) {
   ctx.font = fontFor(thought);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = thought.noticed ? "#111" : "#777";
+  ctx.fillStyle = thought.noticed ? INK : DUST;
   ctx.fillText(thought.text, thought.x, thought.y);
+
+  if (thought.noticed) {
+    const { width } = measureThought(thought);
+    ctx.strokeStyle = STEM;
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(thought.x - width / 2, thought.y + thought.size * 0.62);
+    ctx.lineTo(thought.x + width / 2, thought.y + thought.size * 0.62);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
 function animate() {
-  ctx.clearRect(0, 0, viewWidth, viewHeight);
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, viewWidth, viewHeight);
 
   for (const thought of thoughts) updateThought(thought);
+  pushApart();
+  for (const thought of thoughts) keepThoughtOnCanvas(thought);
 
   drawLinks();
   const order = thoughts.slice().sort((a, b) => Number(a.noticed) - Number(b.noticed));

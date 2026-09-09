@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>fringes — shared minds</title>
+  <title>Fringes — Shared Minds</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -11,42 +11,70 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #ffffff;
-      color: #111;
-      font-family: "Gill Sans", "Gill Sans MT", "Trebuchet MS", "Segoe UI", sans-serif;
+      background: #d9cbb3;
+      color: #2b241c;
+      font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
     }
 
     #app {
       display: flex;
-      flex-direction: column;
       height: 100%;
     }
 
+    /* Notebook spine — not the mapper corner-legend layout */
+    #spine {
+      flex: 0 0 168px;
+      background: #1f3b36;
+      color: #efe6d6;
+      padding: 28px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
     #title {
-      position: absolute;
-      top: 16px;
-      left: 20px;
-      font-size: 16px;
-      font-weight: 700;
-      z-index: 2;
-      pointer-events: none;
+      font-family: Georgia, "Palatino Linotype", Palatino, serif;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+    }
+
+    #title span {
+      display: block;
+      margin-top: 8px;
+      font-family: "Avenir Next", Avenir, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #b7c4b8;
     }
 
     #command-list {
-      position: absolute;
-      top: 46px;
-      left: 20px;
-      font-size: 13px;
-      line-height: 1.65;
-      color: #aaa;
-      z-index: 2;
-      pointer-events: none;
-      max-width: 300px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #c5d0c4;
     }
 
-    #command-list em {
-      color: #666;
-      font-style: normal;
+    #command-list p { margin-bottom: 10px; }
+    #command-list strong {
+      display: block;
+      color: #f0e3c8;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    #stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.35), transparent 50%),
+        #efe4ce;
     }
 
     #canvas-wrap {
@@ -68,26 +96,32 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      color: #ccc;
+      font-family: Georgia, Palatino, serif;
+      font-style: italic;
+      font-size: 20px;
+      color: #a89474;
       pointer-events: none;
     }
 
     #intro.hidden { display: none; }
 
+    /* Composer sits on the paper, not a full-width hairline bar */
     #keyboard {
-      flex: 0 0 88px;
-      border-top: 1px solid #111;
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
+      flex: 0 0 auto;
+      padding: 16px 28px 22px;
     }
 
     #thoughtForm {
       display: flex;
       align-items: center;
-      gap: 16px;
-      width: 100%;
+      gap: 10px;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 10px 10px 10px 18px;
+      background: #fffaf1;
+      border: 1px solid #cbb896;
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(80, 55, 20, 0.08);
     }
 
     #thoughtInput {
@@ -95,54 +129,69 @@
       border: none;
       outline: none;
       background: transparent;
-      font-family: inherit;
+      font-family: Georgia, Palatino, serif;
       font-size: 16px;
-      color: #111;
+      color: #2b241c;
     }
 
-    #thoughtInput::placeholder { color: #bbb; }
+    #thoughtInput::placeholder { color: #b09a78; }
 
     #keyboard button {
-      border: none;
-      background: transparent;
-      font-family: inherit;
-      font-size: 14px;
-      color: #111;
+      font-family: "Avenir Next", Avenir, sans-serif;
+      font-size: 13px;
       cursor: pointer;
-      padding: 6px 0;
+      border-radius: 999px;
+      padding: 8px 16px;
     }
 
-    #clearBtn { color: #888; }
-    #keyboard button:hover { opacity: 0.55; }
+    #spawnBtn {
+      border: none;
+      background: #b85c38;
+      color: #fffaf1;
+    }
+
+    #spawnBtn:hover { background: #9e4c2d; }
+
+    #clearBtn {
+      border: 1px solid #cbb896;
+      background: transparent;
+      color: #6d5c45;
+    }
+
+    #clearBtn:hover { background: #f3ead8; }
   </style>
 </head>
 <body>
   <div id="app">
-    <div id="title">fringes</div>
-    <div id="command-list">
-      <div><em>type</em> — record a thought on the current branch</div>
-      <div><em>click</em> — continue from that fork</div>
-      <div>other branches recede slowly, then vanish</div>
-      <div><em>clear</em> — start over</div>
-    </div>
+    <aside id="spine">
+      <h1 id="title">Fringes<span>shared minds</span></h1>
+      <div id="command-list">
+        <p><strong>Write</strong> a thought grows from the one you are holding</p>
+        <p><strong>Click</strong> follow a different fork</p>
+        <p><strong>Wait</strong> unchosen lines slowly fade away</p>
+        <p><strong>Clear</strong> begin the page again</p>
+      </div>
+    </aside>
 
-    <div id="canvas-wrap">
-      <canvas id="thoughtCanvas"></canvas>
-      <div id="intro">type a thought to begin</div>
-    </div>
+    <div id="stage">
+      <div id="canvas-wrap">
+        <canvas id="thoughtCanvas"></canvas>
+        <div id="intro">start writing</div>
+      </div>
 
-    <div id="keyboard">
-      <form id="thoughtForm">
-        <input
-          id="thoughtInput"
-          type="text"
-          maxlength="90"
-          placeholder="type a thought…"
-          autocomplete="off"
-        />
-        <button type="submit" id="spawnBtn">enter</button>
-        <button type="button" id="clearBtn">clear</button>
-      </form>
+      <div id="keyboard">
+        <form id="thoughtForm">
+          <input
+            id="thoughtInput"
+            type="text"
+            maxlength="90"
+            placeholder="type a thought…"
+            autocomplete="off"
+          />
+          <button type="submit" id="spawnBtn">enter</button>
+          <button type="button" id="clearBtn">clear</button>
+        </form>
+      </div>
     </div>
   </div>
 
