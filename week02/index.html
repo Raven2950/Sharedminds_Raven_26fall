@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Association Mirror</title>
+  <meta name="description" content="A visual comparison of human and AI associations." />
+  <style>
+    :root { --deep: #000000; --water: #090a0c; --water-light: #121419; --foam: #ffffff; --mist: #ffffff; --line: rgba(255,255,255,.24); --accent: #ffffff; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { overflow-x: hidden; color: var(--foam); background: var(--deep); font-family: Georgia, "Times New Roman", serif; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .scene { position: relative; min-height: 100dvh; overflow: hidden; background: radial-gradient(circle at 50% 8%, #191b1f 0, var(--water) 37%, var(--deep) 100%); }
+    .scene::before, .scene::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .24; background: repeating-radial-gradient(ellipse at 50% 100%, transparent 0 22px, rgba(255,255,255,.18) 24px 25px, transparent 28px 62px); transform: perspective(500px) rotateX(58deg) scale(1.7); transform-origin: bottom; animation: water 14s linear infinite; }
+    .scene::after { opacity: .11; transform: perspective(500px) rotateX(58deg) scale(1.85) translateX(13%); animation-duration: 20s; animation-direction: reverse; }
+    @keyframes water { from { background-position: 0 0; } to { background-position: 170px 120px; } }
+    .topbar { position: absolute; z-index: 5; top: 28px; left: 32px; right: 32px; display: flex; justify-content: space-between; align-items: center; color: var(--mist); font-size: 13px; letter-spacing: .06em; }
+    .brand { display: flex; gap: 9px; align-items: center; color: inherit; text-decoration: none; }
+    .brand-mark { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 12px; }
+    .view { position: relative; z-index: 2; min-height: 100dvh; padding: 0 7vw; }
+    .entry-view { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; transition: opacity .7s ease, transform .9s ease; }
+    .entry-view.leaving { position: absolute; inset: 0; width: 100%; opacity: 0; transform: scale(1.12); pointer-events: none; }
+    .entry-title { margin: 0 0 34px; color: var(--mist); font-size: clamp(18px, 2.2vw, 28px); font-weight: 400; letter-spacing: .04em; }
+    .word-wrap { position: relative; width: min(760px, 95vw); }
+    .word-input { width: 100%; border: 0; border-bottom: 1px solid rgba(255,255,255,.55); outline: 0; padding: 12px 3px 18px; color: var(--foam); background: transparent; text-align: center; font-size: clamp(22px, 3.8vw, 42px); }
+    .word-input::placeholder { color: rgba(255,255,255,.55); }
+    .word-input:focus { border-color: var(--accent); }
+    .word-wrap::after { content: ""; position: absolute; left: 50%; bottom: -14px; width: 10px; height: 10px; border: 1px solid var(--accent); border-radius: 50%; transform: translateX(-50%) scale(0); opacity: 0; transition: transform .5s ease, opacity .5s ease; }
+    .word-wrap:focus-within::after { transform: translateX(-50%) scale(1); opacity: 1; animation: pulse 2.6s ease-out infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(228,189,117,.55); } 100% { box-shadow: 0 0 0 28px transparent; } }
+    .human-panel { width: min(780px, 94vw); max-height: 0; margin-top: 0; overflow: hidden; opacity: 0; transform: translateY(20px); transition: max-height 1s ease, margin-top 1s ease, opacity .8s ease, transform .8s ease; }
+    .human-panel.revealed { max-height: 250px; margin-top: 46px; opacity: 1; transform: translateY(0); }
+    .human-label { margin: 0 0 18px; color: var(--mist); font-size: 13px; letter-spacing: .08em; text-transform: lowercase; }
+    .human-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .human-field { border: 1px solid var(--line); border-radius: 100px; padding: 13px 17px; outline: 0; color: var(--foam); background: rgba(255,255,255,.04); text-align: center; font-size: 15px; transition: border-color .25s, background .25s; }
+    .human-field:focus { border-color: var(--accent); background: rgba(255,255,255,.09); }
+    .human-field::placeholder { color: rgba(255,255,255,.55); }
+    .make-button { margin-top: 29px; border: 1px solid rgba(255,255,255,.65); border-radius: 100px; padding: 12px 22px; color: #ffffff; background: #16181b; font-size: 14px; transition: transform .2s, background .2s, border-color .2s; }
+    .make-button:hover { transform: translateY(-2px); background: #202328; border-color: #ffffff; }
+    .make-button:disabled { opacity: .6; cursor: wait; }
+    .entry-status { min-height: 18px; margin: 18px 0 0; color: var(--mist); font-size: 12px; }
+    .entry-status.error { color: #f3a39a; }
+    .api { position: absolute; z-index: 5; left: 32px; bottom: 28px; color: var(--mist); font-size: 11px; }
+    .api summary { cursor: pointer; }
+    .api-box { display: flex; gap: 7px; margin-top: 8px; }
+    .token-input { width: 240px; border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; color: var(--foam); background: rgba(255,255,255,.05); font-size: 11px; }
+    .save-button { border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; color: var(--foam); background: transparent; font-size: 11px; }
+    .result-view { display: none; opacity: 0; transform: scale(.96); transition: opacity 1s ease, transform 1s ease; padding-top: 9vh; padding-bottom: 8vh; }
+    .result-view.visible { display: block; opacity: 1; transform: scale(1); }
+    .result-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin: 4vh auto 8vh; max-width: 1180px; }
+    .result-word { margin: 0; font-family: Georgia, serif; font-size: clamp(34px, 6vw, 74px); font-weight: 400; }
+    .result-caption { margin: 0 0 8px; color: var(--mist); font-size: 13px; }
+    .reflection { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 0; width: min(1180px, 100%); min-height: min(66vh, 620px); margin: auto; overflow: visible; }
+    .reflection::before { content: ""; position: absolute; z-index: 4; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--line); }
+    .side { position: relative; min-height: 520px; display: flex; flex-direction: column; align-items: center; gap: 22px; background: transparent; overflow: visible; }
+    .side-title { position: relative; z-index: 3; margin: 0; color: var(--mist); font-size: 13px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase; }
+    .orb { position: relative; width: 100%; height: 470px; overflow: visible; transition: transform .55s cubic-bezier(.2,.75,.25,1); }
+    .side.ripple-active .orb { transform: translate(var(--wave-x, 0px), var(--wave-y, 0px)) scale(1.025); }
+    .notes { position: absolute; inset: 0; z-index: 3; }
+    .note { position: absolute; width: 150px; height: 150px; display: grid; place-items: center; padding: 24px; border: 0; border-radius: 48% 52% 47% 53%; color: var(--foam); background: radial-gradient(circle, rgba(255,255,255,.12) 0 2%, rgba(255,255,255,.025) 3% 12%, transparent 13% 100%); cursor: grab; user-select: none; touch-action: none; transform: translate(-50%, -50%) rotate(-2deg); }
+    .note::before, .note::after { content: ""; position: absolute; inset: 18px; border: 1px solid rgba(255,255,255,.43); border-radius: 50%; opacity: .7; pointer-events: none; animation: word-ripple 4.8s ease-out infinite; }
+    .note::after { inset: 4px; opacity: .27; animation-delay: 1.55s; animation-duration: 5.8s; }
+    @keyframes word-ripple { 0% { transform: scale(.78); opacity: 0; } 22% { opacity: .72; } 100% { transform: scale(1.15); opacity: 0; } }
+    .note:active { cursor: grabbing; filter: brightness(1.18); z-index: 20 !important; }
+    .note p { position: relative; z-index: 2; margin: 0; font-size: 16px; line-height: 1.1; text-align: center; overflow-wrap: anywhere; }
+    .note small { display: none; }
+    .status { min-height: 19px; margin: 18px auto 0; max-width: 1180px; color: var(--mist); font-size: 12px; text-align: center; }
+    .status.error { color: #f3a39a; }
+    @media (max-width: 700px) {
+      .topbar { top: 20px; left: 18px; right: 18px; }
+      .view { padding: 0 5vw; }
+      .human-fields { grid-template-columns: 1fr; gap: 10px; }
+      .human-panel.revealed { max-height: 360px; margin-top: 47px; }
+      .api { left: 18px; bottom: 20px; }
+      .reflection { grid-template-columns: 1fr; min-height: 760px; }
+      .reflection::before { top: 50%; bottom: auto; left: 0; right: 0; border-left: 0; border-top: 1px solid var(--line); }
+      .side { min-height: 380px; }
+      .orb { width: 100%; height: 320px; }
+      .result-head { display: block; margin: 2vh auto 5vh; }
+      .result-caption { margin-top: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="scene">
+    <section class="view entry-view" id="entry-view">
+      <h1 class="entry-title">Association Mirror</h1>
+      <form id="association-form">
+        <div class="word-wrap">
+          <input class="word-input" id="prompt" autocomplete="off" placeholder="start with one word or thought" required />
+        </div>
+        <div class="human-panel" id="human-panel">
+          <p class="human-label">your associations</p>
+          <div class="human-fields">
+            <input class="human-field" name="human-1" placeholder="first" required />
+            <input class="human-field" name="human-2" placeholder="second" required />
+            <input class="human-field" name="human-3" placeholder="third" required />
+          </div>
+          <button class="make-button" id="submit-button" type="submit">make a mirror →</button>
+        </div>
+        <p class="entry-status" id="entry-status" role="status"></p>
+      </form>
+    </section>
+
+    <details class="api">
+      <summary>API key</summary>
+      <div class="api-box">
+        <input class="token-input" id="api-token" type="password" placeholder="DeepSeek API key" aria-label="DeepSeek API key" />
+        <button class="save-button" id="save-token" type="button">save</button>
+      </div>
+    </details>
+
+    <section class="view result-view" id="result-view" aria-live="polite">
+      <div class="result-head">
+        <h2 class="result-word" id="result-word"></h2>
+        <p class="result-caption">human <span>↔</span> ai</p>
+      </div>
+      <div class="reflection">
+        <section class="side" aria-labelledby="human-title">
+          <h3 class="side-title" id="human-title">human</h3>
+          <div class="orb"><div class="notes" id="human-notes"></div></div>
+        </section>
+        <section class="side" aria-labelledby="ai-title">
+          <h3 class="side-title" id="ai-title">ai</h3>
+          <div class="orb"><div class="notes" id="ai-notes"></div></div>
+        </section>
+      </div>
+      <p class="status" id="status" role="status"></p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector('#association-form');
+    const promptInput = document.querySelector('#prompt');
+    const humanPanel = document.querySelector('#human-panel');
+    const humanInputs = [...document.querySelectorAll('.human-field')];
+    const tokenInput = document.querySelector('#api-token');
+    const saveToken = document.querySelector('#save-token');
+    const submitButton = document.querySelector('#submit-button');
+    const entryView = document.querySelector('#entry-view');
+    const resultView = document.querySelector('#result-view');
+    const humanNotes = document.querySelector('#human-notes');
+    const aiNotes = document.querySelector('#ai-notes');
+    const resultWord = document.querySelector('#result-word');
+    const status = document.querySelector('#status');
+    const entryStatus = document.querySelector('#entry-status');
+    const tokenKey = 'association-mirror-deepseek-token';
+
+    tokenInput.value = localStorage.getItem(tokenKey) || '';
+    promptInput.addEventListener('input', () => humanPanel.classList.toggle('revealed', promptInput.value.trim().length > 0));
+    saveToken.addEventListener('click', () => { localStorage.setItem(tokenKey, tokenInput.value.trim()); setStatus('saved'); });
+    function setStatus(message, error = false) {
+      status.textContent = message;
+      entryStatus.textContent = message;
+      status.classList.toggle('error', error);
+      entryStatus.classList.toggle('error', error);
+    }
+
+    function addNote(text, side, index) {
+      const note = document.createElement('article');
+      note.className = 'note';
+      note.style.left = `${18 + Math.random() * 64}%`;
+      note.style.top = `${18 + Math.random() * 64}%`;
+      note.style.transform = `translate(-50%, -50%) rotate(${[-2, 1, -1][index]}deg)`;
+      note.style.zIndex = index + 2;
+      note.innerHTML = `<small>${side}</small><p></p>`;
+      note.querySelector('p').textContent = text;
+      addDrag(note);
+      (side === 'human' ? humanNotes : aiNotes).append(note);
+    }
+
+    function addDrag(note) {
+      let startX, startY, originX, originY;
+      const side = note.closest('.side');
+      note.addEventListener('pointerdown', event => { note.setPointerCapture(event.pointerId); startX = event.clientX; startY = event.clientY; originX = note.offsetLeft; originY = note.offsetTop; note.style.zIndex = 30; side.classList.add('ripple-active'); });
+      note.addEventListener('pointermove', event => {
+        if (!note.hasPointerCapture(event.pointerId)) return;
+        const bounds = note.parentElement.getBoundingClientRect();
+        const deltaX = event.clientX - startX;
+        const deltaY = event.clientY - startY;
+        note.style.left = `${Math.max(0, Math.min(originX + deltaX, bounds.width - note.offsetWidth))}px`;
+        note.style.top = `${Math.max(8, Math.min(originY + deltaY, bounds.height - note.offsetHeight))}px`;
+        side.style.setProperty('--wave-x', `${Math.max(-9, Math.min(9, deltaX / 12))}px`);
+        side.style.setProperty('--wave-y', `${Math.max(-9, Math.min(9, deltaY / 12))}px`);
+      });
+      note.addEventListener('pointerup', event => { note.releasePointerCapture(event.pointerId); side.classList.remove('ripple-active'); side.style.removeProperty('--wave-x'); side.style.removeProperty('--wave-y'); });
+    }
+
+    function clearNotes() { humanNotes.replaceChildren(); aiNotes.replaceChildren(); }
+
+    async function getAiAssociations(prompt, token) {
+      if (!token) throw new Error('add your DeepSeek API key first');
+      let response;
+      try {
+        response = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'deepseek-v4-flash',
+            messages: [{ role: 'system', content: 'Return valid JSON only. The JSON must have exactly one key named associations whose value is an array of exactly 3 short strings.' }, { role: 'user', content: `Give 3 short, distinct word or phrase associations for "${prompt}".` }],
+            response_format: { type: 'json_object' },
+            max_tokens: 100,
+            temperature: .85,
+            stream: false
+          })
+        });
+      } catch {
+        throw new Error('could not connect to DeepSeek; check your internet connection');
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error?.message || `DeepSeek error ${response.status}`);
+      const raw = data.choices?.[0]?.message?.content || '';
+      if (!raw) throw new Error('DeepSeek returned no associations');
+      try {
+        const parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, ''));
+        if (Array.isArray(parsed.associations) && parsed.associations.length >= 3) return parsed.associations.slice(0, 3).map(item => String(item).trim());
+      } catch {}
+      const fallback = raw.replace(/^\s*[-\d.)]+\s*/gm, '').replace(/[，、\n]+/g, ',').split(',').map(item => item.trim().replace(/^['"-]|['"]$/g, '')).filter(Boolean).slice(0, 3);
+      if (fallback.length < 3) throw new Error('DeepSeek returned fewer than 3 associations');
+      return fallback;
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const prompt = promptInput.value.trim();
+      const human = humanInputs.map(input => input.value.trim());
+      if (!human.every(Boolean)) { setStatus('add three associations', true); return; }
+      submitButton.disabled = true;
+      submitButton.textContent = 'ripple…';
+      entryView.classList.add('leaving');
+      try {
+        const ai = await getAiAssociations(prompt, tokenInput.value.trim() || localStorage.getItem(tokenKey) || '');
+        resultWord.textContent = prompt;
+        clearNotes();
+        human.forEach((item, index) => addNote(item, 'human', index));
+        ai.forEach((item, index) => addNote(item, 'ai', index));
+        resultView.classList.add('visible');
+        setStatus('drag the reflections');
+      } catch (error) {
+        entryView.classList.remove('leaving');
+        setStatus(error.message, true);
+      } finally { submitButton.disabled = false; submitButton.textContent = 'make a mirror →'; }
+    });
+  </script>
+</body>
+</html>
