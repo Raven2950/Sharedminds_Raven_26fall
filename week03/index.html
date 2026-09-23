@@ -201,8 +201,10 @@
     });
     let selectedIds = new Set();
     let currentPrompt = localStorage.getItem('association-mirror-week03-prompt') || '';
+    const buildToken = '__DEEPSEEK_API_KEY__';
+    const injectedToken = buildToken.startsWith('__') ? '' : buildToken;
 
-    tokenInput.value = localStorage.getItem(tokenKey) || '';
+    tokenInput.value = localStorage.getItem(tokenKey) || injectedToken;
     replicateTokenInput.value = localStorage.getItem(replicateTokenKey) || '';
     promptInput.value = currentPrompt;
     promptInput.addEventListener('input', () => humanPanel.classList.toggle('revealed', promptInput.value.trim().length > 0));
