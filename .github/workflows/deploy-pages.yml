@@ -24,7 +24,7 @@ jobs:
       - name: Assemble Pages files
         run: |
           mkdir _site
-          cp -R week01 week02 week03 _site/
+          cp -R week01 week02 week03 week04 _site/
 
       - name: Inject DeepSeek key into Week 03 build
         env:
