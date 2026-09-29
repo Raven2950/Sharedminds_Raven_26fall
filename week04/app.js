@@ -19,6 +19,8 @@ const styleChoices = $('#style-choices');
 const stage = $('#comic-stage');
 const thoughtInput = $('#thought-input');
 const imagePromptInput = $('#image-prompt-input');
+const continuityInput = $('#continuity-input');
+const showTextToggle = $('#show-text-toggle');
 const generateButton = $('#generate-button');
 const profileStatus = $('#profile-status');
 const workspaceStatus = $('#workspace-status');
@@ -34,6 +36,9 @@ let profileName = '';
 let selectedStyle = 'japanese';
 let panels = [];
 let dragState = null;
+let resizeState = null;
+let continuityNotes = '';
+let showText = true;
 
 replicateTokenInput.value = localStorage.getItem(localTokenKey) || '';
 replicateTokenInput.addEventListener('change', () => localStorage.setItem(localTokenKey, replicateTokenInput.value.trim()));
@@ -63,7 +68,7 @@ styleChoices.addEventListener('click', event => {
 
 function defaultPosition(index) {
   const positions = {
-    japanese: [{ x: 8, y: 9, w: 35, h: 32 }, { x: 49, y: 19, w: 43, h: 42 }, { x: 18, y: 55, w: 34, h: 34 }, { x: 61, y: 66, w: 28, h: 27 }],
+    japanese: [{ x: 5, y: 8, w: 39, h: 31 }, { x: 46, y: 5, w: 48, h: 37 }, { x: 12, y: 51, w: 38, h: 37 }, { x: 58, y: 59, w: 34, h: 29 }],
     retro: [{ x: 7, y: 8, w: 40, h: 36 }, { x: 53, y: 8, w: 40, h: 36 }, { x: 7, y: 51, w: 40, h: 36 }, { x: 53, y: 51, w: 40, h: 36 }],
     american: [{ x: 7, y: 7, w: 58, h: 43 }, { x: 69, y: 7, w: 24, h: 26 }, { x: 69, y: 38, w: 24, h: 26 }, { x: 7, y: 57, w: 86, h: 31 }]
   };
@@ -84,14 +89,15 @@ function renderPanels() {
     const position = panel.position || defaultPosition(index);
     panel.position = position;
     const element = document.createElement('article');
-    element.className = 'comic-panel';
+    element.className = `comic-panel${showText ? '' : ' hide-copy'}`;
     element.dataset.id = panel.id;
     element.style.left = `${position.x}%`;
     element.style.top = `${position.y}%`;
     element.style.width = `${position.w}%`;
     element.style.height = `${position.h}%`;
-    element.innerHTML = `<div class="panel-image">${panel.imageUrl ? `<img src="${escapeHtml(panel.imageUrl)}" alt="${escapeHtml(panel.text)}" />` : '<div class="loading-card">text frame</div>'}</div><div class="panel-copy"><span class="panel-number">FRAME ${String(index + 1).padStart(2, '0')}</span>${escapeHtml(panel.text)}</div>`;
+    element.innerHTML = `<div class="panel-image">${panel.imageUrl ? `<img src="${escapeHtml(panel.imageUrl)}" alt="${escapeHtml(panel.text)}" />` : '<div class="loading-card">text frame</div>'}</div>${showText ? `<div class="panel-copy"><span class="panel-number">FRAME ${String(index + 1).padStart(2, '0')}</span>${escapeHtml(panel.text)}</div>` : ''}<button class="panel-resize" type="button" aria-label="Resize frame"></button>`;
     element.addEventListener('pointerdown', startDrag);
+    element.querySelector('.panel-resize').addEventListener('pointerdown', event => { event.stopPropagation(); startResize(event); });
     stage.appendChild(element);
   });
 }
@@ -114,6 +120,44 @@ function moveDrag(event) {
   dragState.panel.position.y = Math.max(0, Math.min(100 - dragState.panel.position.h, dragState.originalY + ((event.clientY - dragState.startY) / rect.height) * 100));
   dragState.element.style.left = `${dragState.panel.position.x}%`;
   dragState.element.style.top = `${dragState.panel.position.y}%`;
+}
+
+function startResize(event) {
+  const element = event.currentTarget.closest('.comic-panel');
+  const panel = panels.find(item => item.id === element?.dataset.id);
+  if (!element || !panel) return;
+  const rect = element.getBoundingClientRect();
+  element.setPointerCapture(event.pointerId);
+  element.classList.add('resizing');
+  resizeState = { element, panel, pointerId: event.pointerId, startX: event.clientX, startWidth: rect.width, ratio: rect.width / rect.height };
+  element.addEventListener('pointermove', moveResize);
+  element.addEventListener('pointerup', endResize, { once: true });
+}
+
+function moveResize(event) {
+  if (!resizeState) return;
+  const stageRect = stage.getBoundingClientRect();
+  const minimum = 130;
+  const maximum = stageRect.width * .82;
+  let width = Math.max(minimum, Math.min(maximum, resizeState.startWidth + event.clientX - resizeState.startX));
+  let height = width / resizeState.ratio;
+  if (height > stageRect.height * .78) {
+    height = stageRect.height * .78;
+    width = height * resizeState.ratio;
+  }
+  resizeState.panel.position.w = (width / stageRect.width) * 100;
+  resizeState.panel.position.h = (height / stageRect.height) * 100;
+  resizeState.element.style.width = `${resizeState.panel.position.w}%`;
+  resizeState.element.style.height = `${resizeState.panel.position.h}%`;
+}
+
+function endResize(event) {
+  if (!resizeState) return;
+  resizeState.element.releasePointerCapture?.(event.pointerId);
+  resizeState.element.classList.remove('resizing');
+  resizeState.element.removeEventListener('pointermove', moveResize);
+  resizeState = null;
+  saveProfile().catch(error => setStatus(workspaceStatus, error.message, true));
 }
 
 function endDrag(event) {
@@ -140,9 +184,28 @@ async function generateImage(prompt) {
   return imageUrl;
 }
 
+function buildImagePrompt(text, visualPrompt) {
+  const previous = panels.slice(-5).map((panel, index) => `Frame ${panels.length - panels.slice(-5).length + index + 1}: ${panel.text}`).join('\n');
+  const styleDirection = {
+    japanese: 'dynamic shonen manga composition, expressive perspective, asymmetrical panel energy',
+    retro: 'quiet vintage comic composition, consistent period illustration, restrained framing',
+    american: 'bold American comic composition, consistent inked characters, strong silhouette and action clarity'
+  }[selectedStyle];
+  return `Create the next sequential comic image for an ongoing story. This is not a new standalone scene. Keep the same recurring characters, faces, body proportions, clothing, colors, setting, lighting, and drawing style from earlier frames. Treat the following continuity notes as fixed visual facts: ${continuityNotes || 'No extra notes. Preserve every recurring detail from the previous frames.'}
+
+Previous frames:
+${previous || 'This is the opening frame, establish a clear visual world that can be continued.'}
+
+Current thought: ${text}
+Current image direction: ${visualPrompt}
+Visual language: ${styleDirection}
+
+Show the next moment in the same story. Keep character identity stable. Do not invent a different protagonist, costume, art style, or location unless the current thought explicitly changes it. No text, speech bubbles, borders, collage, or multiple unrelated scenes. One clear comic image.`;
+}
+
 async function saveProfile() {
   if (!firebaseUser || !profileId) return;
-  await setDoc(doc(db, 'profiles', profileId), { ownerUid: firebaseUser.uid, name: profileName, style: selectedStyle, panels, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(doc(db, 'profiles', profileId), { ownerUid: firebaseUser.uid, name: profileName, style: selectedStyle, panels, continuityNotes, showText, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 async function loadProfile(id) {
@@ -153,6 +216,10 @@ async function loadProfile(id) {
   profileName = data.name || nameInput.value.trim();
   selectedStyle = data.style || 'japanese';
   panels = Array.isArray(data.panels) ? data.panels : [];
+  continuityNotes = data.continuityNotes || '';
+  showText = data.showText !== false;
+  continuityInput.value = continuityNotes;
+  showTextToggle.checked = showText;
 }
 
 function openComic() {
@@ -187,7 +254,8 @@ panelForm.addEventListener('submit', async event => {
   const panelId = `panel-${Date.now()}`;
   try {
     const visualPrompt = imagePromptInput.value.trim() || text;
-    const imageUrl = await generateImage(`A single comic book panel, visual interpretation of: ${visualPrompt}. Preserve the emotional ambiguity of the thought. No text, no speech bubbles, no borders, no collage, one clear scene.`);
+    continuityNotes = continuityInput.value.trim();
+    const imageUrl = await generateImage(buildImagePrompt(text, visualPrompt));
     panels.push({ id: panelId, text, imageUrl, prompt: visualPrompt, position: defaultPosition(panels.length), createdAt: new Date().toISOString() });
     renderPanels();
     await saveProfile();
@@ -197,6 +265,9 @@ panelForm.addEventListener('submit', async event => {
   } catch (error) { setStatus(workspaceStatus, error.message, true); }
   finally { generateButton.disabled = false; generateButton.textContent = 'make next frame'; }
 });
+
+continuityInput.addEventListener('input', () => { continuityNotes = continuityInput.value; });
+showTextToggle.addEventListener('change', () => { showText = showTextToggle.checked; renderPanels(); saveProfile().catch(error => setStatus(workspaceStatus, error.message, true)); });
 
 $('#save-button').addEventListener('click', async () => {
   try { await saveProfile(); setStatus(workspaceStatus, 'saved'); } catch (error) { setStatus(workspaceStatus, error.message, true); }
