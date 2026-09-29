@@ -23,6 +23,13 @@ h1, h2, p { margin-top: 0; }
 h1 { max-width: 8ch; margin-bottom: 22px; font-size: clamp(52px, 10vw, 112px); line-height: .9; letter-spacing: -.08em; font-weight: 700; }
 .intro { max-width: 39ch; color: var(--muted); font-size: 16px; line-height: 1.5; }
 .profile-form { display: grid; gap: 17px; max-width: 430px; margin-top: 38px; }
+.find-profiles-button { justify-self: start; border-color: transparent; padding: 0; color: var(--accent); }
+.saved-profiles { display: grid; gap: 7px; }
+.saved-heading, .saved-empty { margin: -4px 0 0; color: var(--muted); font-size: 11px; }
+.saved-profile { display: flex; justify-content: space-between; align-items: center; gap: 14px; border: 1px solid var(--line); padding: 10px 11px; color: var(--ink); background: rgba(255,255,255,.22); text-align: left; }
+.saved-profile:hover { border-color: var(--accent); }
+.saved-profile strong { font-size: 12px; font-weight: 500; }
+.saved-profile span { color: var(--muted); font-size: 10px; white-space: nowrap; }
 label, .style-label { display: grid; gap: 8px; color: var(--muted); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 0; padding: 12px 13px; outline: 0; color: var(--ink); background: rgba(255,255,255,.34); text-transform: none; letter-spacing: 0; }
 textarea { resize: vertical; line-height: 1.45; }
