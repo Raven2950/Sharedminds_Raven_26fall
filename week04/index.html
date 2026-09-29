@@ -14,6 +14,8 @@
         <p class="intro">Start with a name, choose a visual grammar, and let each next frame change what came before.</p>
         <form id="profile-form" class="profile-form">
           <label>Name <input id="name-input" required autocomplete="name" placeholder="your name" /></label>
+          <button id="find-profiles-button" class="text-button find-profiles-button" type="button">find my saved comics</button>
+          <div id="saved-profiles" class="saved-profiles" aria-live="polite"></div>
           <label>Existing ID <input id="id-input" autocomplete="off" placeholder="leave blank to make a new one" /></label>
           <div class="style-label">Choose a frame language</div>
           <div id="style-choices" class="style-choices" role="group" aria-label="Frame style">
