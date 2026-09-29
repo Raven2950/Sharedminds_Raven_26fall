@@ -68,18 +68,20 @@ code { font-size: 10px; }
 .comic-panel.resizing { z-index: 110; }
 .comic-panel:hover { z-index: 90; }
 .panel-image { min-height: 0; overflow: hidden; background: #c8c4ba; }
-.panel-image img { display: block; width: 100%; height: 100%; min-height: 100px; object-fit: cover; }
+.panel-image img { display: block; width: 100%; height: 100%; min-height: 100px; object-fit: cover; transform-origin: center; transition: transform .18s ease-out; }
 .panel-copy { padding: 9px 10px 10px; background: var(--panel); font-size: 12px; line-height: 1.25; }
 .hide-copy { grid-template-rows: 1fr; }
 .panel-number { display: block; margin-bottom: 5px; color: var(--accent); font-size: 9px; letter-spacing: .08em; }
 .panel-resize { position: absolute; right: -6px; bottom: -6px; width: 17px; height: 17px; border: 2px solid var(--ink); background: var(--accent); cursor: nwse-resize; touch-action: none; }
-.style-japanese .comic-panel { border: 0; box-shadow: 9px 10px 0 rgba(23,23,23,.19); transform: rotate(-1.3deg) skewX(-1deg); clip-path: polygon(3% 0, 98% 4%, 100% 92%, 91% 100%, 4% 96%, 0 8%); }
-.style-japanese .comic-panel:nth-child(2n) { transform: rotate(1.5deg) skewX(1deg); clip-path: polygon(0 5%, 94% 0, 100% 88%, 96% 100%, 5% 95%); }
-.style-japanese .comic-panel:nth-child(3n) { transform: rotate(-2deg); clip-path: polygon(4% 0, 100% 7%, 95% 100%, 0 93%); }
-.style-japanese .panel-image, .style-japanese .panel-copy { border: 3px solid var(--ink); }
-.style-japanese .panel-image { border-bottom: 0; }
-.style-japanese .panel-copy { border-top: 0; }
-.style-japanese .panel-resize { right: 1px; bottom: 1px; transform: rotate(2deg); }
+.image-tools { position: absolute; right: 7px; bottom: 7px; z-index: 2; display: none; padding: 5px 7px; color: var(--ink); background: rgba(247,245,239,.9); font-size: 8px; letter-spacing: .04em; text-transform: uppercase; }
+.comic-panel:hover .image-tools, .comic-panel.resizing .image-tools { display: block; }
+.image-tools label { display: flex; align-items: center; gap: 5px; color: var(--ink); font-size: 8px; }
+.image-zoom { width: 72px; height: 10px; padding: 0; accent-color: var(--accent); }
+.style-japanese .comic-panel { border: 3px solid var(--ink); box-shadow: 9px 10px 0 rgba(23,23,23,.19); transform: rotate(-1.3deg) skewX(-1deg); }
+.style-japanese .comic-panel:nth-child(2n) { transform: rotate(1.5deg) skewX(1deg); }
+.style-japanese .comic-panel:nth-child(3n) { transform: rotate(-2deg) skewX(.5deg); }
+.style-japanese .panel-image { border-bottom: 3px solid var(--ink); }
+.style-japanese .panel-resize { right: -7px; bottom: -7px; transform: rotate(2deg); }
 .style-retro .comic-panel { box-shadow: none; border-width: 1px; }
 .style-retro .comic-panel:nth-child(odd) { transform: rotate(-1deg); }
 .style-retro .comic-panel:nth-child(even) { transform: rotate(1deg); }
