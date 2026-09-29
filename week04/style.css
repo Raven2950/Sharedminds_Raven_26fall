@@ -1,0 +1,86 @@
+:root {
+  --paper: #ebe9e4;
+  --ink: #171717;
+  --muted: #6d6a63;
+  --line: rgba(23, 23, 23, .18);
+  --accent: #bb3328;
+  --panel: #f7f5ef;
+  --shadow: 8px 9px 0 rgba(23, 23, 23, .12);
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: var(--paper); }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+.hidden { display: none !important; }
+.app-shell { min-height: 100dvh; }
+.welcome-view { min-height: 100dvh; display: grid; align-content: center; max-width: 670px; margin: 0 auto; padding: 8vw 7vw; }
+.eyebrow { margin: 0 0 14px; color: var(--accent); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+h1, h2, p { margin-top: 0; }
+h1 { max-width: 8ch; margin-bottom: 22px; font-size: clamp(52px, 10vw, 112px); line-height: .9; letter-spacing: -.08em; font-weight: 700; }
+.intro { max-width: 39ch; color: var(--muted); font-size: 16px; line-height: 1.5; }
+.profile-form { display: grid; gap: 17px; max-width: 430px; margin-top: 38px; }
+label, .style-label { display: grid; gap: 8px; color: var(--muted); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 0; padding: 12px 13px; outline: 0; color: var(--ink); background: rgba(255,255,255,.34); text-transform: none; letter-spacing: 0; }
+textarea { resize: vertical; line-height: 1.45; }
+input:focus, textarea:focus { border-color: var(--accent); box-shadow: 3px 3px 0 rgba(187, 51, 40, .16); }
+.style-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.style-choice, .text-button { border: 1px solid var(--line); padding: 10px 9px; color: var(--ink); background: transparent; font-size: 11px; text-align: left; }
+.style-choice.selected { border-color: var(--accent); color: var(--accent); box-shadow: 3px 3px 0 rgba(187, 51, 40, .16); }
+.primary-button { border: 0; padding: 13px 16px; color: #fff; background: var(--ink); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.primary-button:active, .text-button:active, .style-choice:active { transform: translateY(1px); }
+.primary-button:disabled { cursor: wait; opacity: .5; }
+.form-status { min-height: 18px; margin: 0; color: var(--accent); font-size: 12px; line-height: 1.4; }
+
+.comic-view { min-height: 100dvh; padding: 26px 30px 30px; }
+.topbar { display: flex; justify-content: space-between; gap: 24px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 15px; }
+.topbar .eyebrow { display: inline-block; margin: 0 16px 0 0; }
+.topbar strong { font-size: 13px; font-weight: 500; }
+.top-actions { display: flex; gap: 7px; }
+.text-button { padding: 7px 10px; font-size: 10px; }
+.workspace { display: grid; grid-template-columns: minmax(230px, 280px) minmax(0, 1fr); gap: 30px; padding-top: 27px; }
+.side-panel { display: grid; align-content: start; gap: 18px; }
+.side-panel h2 { margin: -4px 0 -8px; font-size: 23px; letter-spacing: -.04em; }
+.side-copy { max-width: 27ch; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.panel-form { display: grid; gap: 15px; }
+.optional { color: var(--muted); font-size: 9px; text-transform: lowercase; letter-spacing: 0; }
+.settings { border-top: 1px solid var(--line); padding-top: 13px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.settings summary { color: var(--ink); cursor: pointer; }
+.settings label { margin-top: 14px; }
+.settings p { margin: 12px 0 0; }
+code { font-size: 10px; }
+.comic-area { min-width: 0; }
+.comic-stage { position: relative; min-height: min(710px, calc(100dvh - 150px)); overflow: hidden; border: 1px solid rgba(23,23,23,.35); background: #d9d5cc; isolation: isolate; }
+.comic-stage::before { position: absolute; inset: 0; z-index: -1; opacity: .2; content: ''; background-image: radial-gradient(#171717 .65px, transparent .65px); background-size: 5px 5px; pointer-events: none; }
+.stage-hint { margin: 9px 0 0; color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.comic-panel { position: absolute; display: grid; grid-template-rows: 1fr auto; overflow: hidden; width: 180px; min-height: 142px; border: 2px solid var(--ink); background: var(--panel); box-shadow: var(--shadow); touch-action: none; user-select: none; }
+.comic-panel.dragging { z-index: 100; box-shadow: 13px 14px 0 rgba(23, 23, 23, .18); }
+.comic-panel:hover { z-index: 90; }
+.panel-image { min-height: 0; background: #c8c4ba; }
+.panel-image img { display: block; width: 100%; height: 100%; min-height: 100px; object-fit: cover; }
+.panel-copy { padding: 9px 10px 10px; background: var(--panel); font-size: 12px; line-height: 1.25; }
+.panel-number { display: block; margin-bottom: 5px; color: var(--accent); font-size: 9px; letter-spacing: .08em; }
+.style-retro .comic-panel { box-shadow: none; border-width: 1px; }
+.style-retro .comic-panel:nth-child(odd) { transform: rotate(-1deg); }
+.style-retro .comic-panel:nth-child(even) { transform: rotate(1deg); }
+.style-american .comic-panel { border-width: 4px; box-shadow: 6px 7px 0 var(--ink); }
+.style-american .panel-copy { font-weight: 700; }
+.empty-stage { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; }
+.loading-card { display: grid; place-items: center; min-height: 100%; color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; background: repeating-linear-gradient(-45deg, #d3d0c8, #d3d0c8 8px, #c8c4ba 8px, #c8c4ba 16px); }
+.lightbox { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 8vw; background: rgba(23,23,23,.92); }
+.close-button { position: fixed; top: 22px; right: 25px; border: 1px solid rgba(255,255,255,.45); padding: 8px 12px; color: #fff; background: transparent; font-size: 11px; }
+.lightbox-content { width: min(640px, 88vw); color: #fff; }
+.lightbox-content img { display: block; width: 100%; max-height: 70vh; object-fit: contain; }
+.lightbox-content p { margin: 15px 0 0; font-size: 17px; line-height: 1.35; }
+
+@media (max-width: 760px) {
+  .comic-view { padding: 18px; }
+  .topbar, .workspace { display: block; }
+  .top-actions { margin-top: 14px; }
+  .side-panel { margin-bottom: 27px; }
+  .comic-stage { min-height: 560px; }
+  .style-choices { grid-template-columns: 1fr; }
+}
