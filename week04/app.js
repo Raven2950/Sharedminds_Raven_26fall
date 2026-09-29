@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, getDocs, query, setDoc, serverTimestamp, where } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
 
 const REPLICATE_PROXY_URL = 'https://itp-ima-replicate-proxy.web.app/api/create_n_get';
@@ -15,6 +15,8 @@ const profileForm = $('#profile-form');
 const panelForm = $('#panel-form');
 const nameInput = $('#name-input');
 const idInput = $('#id-input');
+const findProfilesButton = $('#find-profiles-button');
+const savedProfiles = $('#saved-profiles');
 const styleChoices = $('#style-choices');
 const stage = $('#comic-stage');
 const thoughtInput = $('#thought-input');
@@ -51,6 +53,45 @@ function setStatus(element, message, isError = false) {
 function makeProfileId(name) {
   const clean = name.replace(/[^a-z0-9]/gi, '').slice(0, 8).toUpperCase() || 'GUEST';
   return `${clean}-${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+function formatSavedDate(value) {
+  const date = value?.toDate?.() || (value ? new Date(value) : null);
+  if (!date || Number.isNaN(date.getTime())) return 'saved comic';
+  return `saved ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+}
+
+function renderSavedProfiles(profiles) {
+  if (!profiles.length) {
+    savedProfiles.innerHTML = '<p class="saved-empty">no saved comics found for this name</p>';
+    return;
+  }
+  savedProfiles.innerHTML = `<p class="saved-heading">choose a saved comic</p>${profiles.map((profile, index) => `<button class="saved-profile" type="button" data-profile-id="${escapeHtml(profile.id)}"><strong>${escapeHtml(profile.name || nameInput.value.trim())} comic ${index + 1}</strong><span>${profile.panels.length} frames · ${formatSavedDate(profile.updatedAt)}</span></button>`).join('')}`;
+  savedProfiles.querySelectorAll('[data-profile-id]').forEach(button => button.addEventListener('click', async () => {
+    findProfilesButton.disabled = true;
+    setStatus(profileStatus, 'opening saved comic…');
+    try {
+      await loadProfile(button.dataset.profileId);
+      openComic();
+    } catch (error) { setStatus(profileStatus, error.message, true); }
+    finally { findProfilesButton.disabled = false; }
+  }));
+}
+
+async function findSavedProfiles() {
+  if (!firebaseUser) { setStatus(profileStatus, 'connecting to Firebase…'); return; }
+  const name = nameInput.value.trim();
+  if (!name) { setStatus(profileStatus, 'enter your name first', true); return; }
+  findProfilesButton.disabled = true;
+  setStatus(profileStatus, 'looking for saved comics…');
+  try {
+    const profilesQuery = query(collection(db, 'profiles'), where('ownerUid', '==', firebaseUser.uid), where('name', '==', name));
+    const snapshot = await getDocs(profilesQuery);
+    const profiles = snapshot.docs.map(snapshotDoc => ({ id: snapshotDoc.id, ...snapshotDoc.data(), panels: Array.isArray(snapshotDoc.data().panels) ? snapshotDoc.data().panels : [] })).sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+    renderSavedProfiles(profiles);
+    setStatus(profileStatus, profiles.length ? '' : 'no saved comics found');
+  } catch (error) { setStatus(profileStatus, error.message, true); }
+  finally { findProfilesButton.disabled = false; }
 }
 
 function selectStyle(style) {
@@ -250,6 +291,8 @@ profileForm.addEventListener('submit', async event => {
     openComic();
   } catch (error) { setStatus(profileStatus, error.message, true); }
 });
+
+findProfilesButton.addEventListener('click', findSavedProfiles);
 
 panelForm.addEventListener('submit', async event => {
   event.preventDefault();
