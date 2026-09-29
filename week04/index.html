@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thought Comic</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main id="app" class="app-shell">
+      <section id="welcome-view" class="welcome-view">
+        <p class="eyebrow">a small machine for arranging thought</p>
+        <h1>Make a sequence.</h1>
+        <p class="intro">Start with a name, choose a visual grammar, and let each next frame change what came before.</p>
+        <form id="profile-form" class="profile-form">
+          <label>Name <input id="name-input" required autocomplete="name" placeholder="your name" /></label>
+          <label>Existing ID <input id="id-input" autocomplete="off" placeholder="leave blank to make a new one" /></label>
+          <div class="style-label">Choose a frame language</div>
+          <div id="style-choices" class="style-choices" role="group" aria-label="Frame style">
+            <button type="button" class="style-choice selected" data-style="japanese">Japanese dynamic</button>
+            <button type="button" class="style-choice" data-style="retro">Retro grid</button>
+            <button type="button" class="style-choice" data-style="american">American comic</button>
+          </div>
+          <button class="primary-button" type="submit">enter the comic</button>
+          <p id="profile-status" class="form-status" role="status"></p>
+        </form>
+      </section>
+
+      <section id="comic-view" class="comic-view hidden">
+        <header class="topbar">
+          <div><span class="eyebrow">thought comic</span><strong id="profile-label">—</strong></div>
+          <div class="top-actions">
+            <button id="play-button" class="text-button" type="button">play sequence</button>
+            <button id="save-button" class="text-button" type="button">save</button>
+            <button id="new-button" class="text-button" type="button">new comic</button>
+          </div>
+        </header>
+
+        <div class="workspace">
+          <aside class="side-panel">
+            <p class="eyebrow">current sequence</p>
+            <h2 id="style-label">Japanese dynamic</h2>
+            <p class="side-copy">Each panel is a thought held in place. Drag the frames to change their relationship.</p>
+            <form id="panel-form" class="panel-form">
+              <label>What comes next?
+                <textarea id="thought-input" required rows="4" placeholder="a person waits beside a window..."></textarea>
+              </label>
+              <label>Image direction <span class="optional">optional</span>
+                <input id="image-prompt-input" placeholder="quiet afternoon, close-up" />
+              </label>
+              <button id="generate-button" class="primary-button" type="submit">make next frame</button>
+            </form>
+            <details class="settings">
+              <summary>connection settings</summary>
+              <label>Replicate proxy token <span class="optional">optional</span>
+                <input id="replicate-token" type="password" placeholder="paste token if required" />
+              </label>
+              <p>Firebase connects through the web configuration in <code>firebase-config.js</code>.</p>
+            </details>
+            <p id="workspace-status" class="form-status" role="status"></p>
+          </aside>
+
+          <section class="comic-area" aria-label="Comic canvas">
+            <div id="comic-stage" class="comic-stage style-japanese"></div>
+            <p class="stage-hint">drag panels · the order is yours</p>
+          </section>
+        </div>
+      </section>
+    </main>
+    <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="Playing sequence">
+      <button id="close-lightbox" class="close-button" type="button">close</button>
+      <div id="lightbox-content" class="lightbox-content"></div>
+    </div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
