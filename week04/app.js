@@ -95,9 +95,16 @@ function renderPanels() {
     element.style.top = `${position.y}%`;
     element.style.width = `${position.w}%`;
     element.style.height = `${position.h}%`;
-    element.innerHTML = `<div class="panel-image">${panel.imageUrl ? `<img src="${escapeHtml(panel.imageUrl)}" alt="${escapeHtml(panel.text)}" />` : '<div class="loading-card">text frame</div>'}</div>${showText ? `<div class="panel-copy"><span class="panel-number">FRAME ${String(index + 1).padStart(2, '0')}</span>${escapeHtml(panel.text)}</div>` : ''}<button class="panel-resize" type="button" aria-label="Resize frame"></button>`;
+    const imageScale = Number(panel.imageScale || 1).toFixed(2);
+    element.innerHTML = `<div class="panel-image">${panel.imageUrl ? `<img src="${escapeHtml(panel.imageUrl)}" alt="${escapeHtml(panel.text)}" style="transform:scale(${imageScale})" />` : '<div class="loading-card">text frame</div>'}<div class="image-tools"><label>image zoom <input class="image-zoom" type="range" min="1" max="2.5" step=".05" value="${imageScale}" aria-label="Image zoom" /></label></div></div>${showText ? `<div class="panel-copy"><span class="panel-number">FRAME ${String(index + 1).padStart(2, '0')}</span>${escapeHtml(panel.text)}</div>` : ''}<button class="panel-resize" type="button" aria-label="Resize frame"></button>`;
     element.addEventListener('pointerdown', startDrag);
     element.querySelector('.panel-resize').addEventListener('pointerdown', event => { event.stopPropagation(); startResize(event); });
+    element.querySelector('.image-zoom').addEventListener('pointerdown', event => event.stopPropagation());
+    element.querySelector('.image-zoom').addEventListener('input', event => {
+      panel.imageScale = Number(event.target.value);
+      element.querySelector('.panel-image img')?.style.setProperty('transform', `scale(${panel.imageScale})`);
+    });
+    element.querySelector('.image-zoom').addEventListener('change', () => saveProfile().catch(error => setStatus(workspaceStatus, error.message, true)));
     stage.appendChild(element);
   });
 }
