@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Memory Crypt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #10161f; --navy: #1f3b4a; --teal: #3f7a80; --ice: #8fc1c9;
+    --cream: #f1e6ae; --paper: #fbf4cf; --wine: #5a1a2e; --crimson: #b0324f; --pink: #e27d7a;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); color: var(--ink);
+    font-family: 'EB Garamond', Georgia, serif; -webkit-font-smoothing: antialiased; }
+  canvas { display: block; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+  canvas.pointing { cursor: pointer; }
+
+  .card { position: fixed; background: var(--cream); border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--crimson); padding: 20px 24px; box-sizing: border-box; }
+  .hidden { display: none !important; }
+  .sc { font-family: 'Cormorant SC', Georgia, serif; font-weight: 700; letter-spacing: .06em; }
+  h1 { margin: 0; font-family: 'Cormorant SC', Georgia, serif; font-weight: 700; font-size: 42px; line-height: 1; color: var(--crimson); }
+  p { margin: 0; }
+  .lead { color: var(--navy); margin: 10px 0 12px; font-size: 18px; line-height: 1.4; }
+  .steps { margin: 0 0 14px; padding-left: 22px; font-size: 17px; line-height: 1.45; }
+  .steps b { color: var(--crimson); font-weight: 600; }
+  textarea, input[type=text] { width: 100%; box-sizing: border-box; background: var(--paper); color: var(--ink);
+    border: 2px solid var(--ink); font: 19px/1.4 'EB Garamond', Georgia, serif; padding: 8px 10px; outline: none; }
+  textarea { height: 150px; resize: none; }
+  textarea:focus, input[type=text]:focus { border-color: var(--crimson); }
+  .row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  button { font: 700 17px 'Cormorant SC', Georgia, serif; letter-spacing: .04em; background: var(--crimson); color: var(--cream);
+    border: 2px solid var(--ink); padding: 6px 14px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+  button:hover { background: var(--wine); }
+  button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  button.ghost { background: var(--paper); color: var(--ink); }
+  button.ghost:hover { background: #e8d894; }
+  button:disabled { background: #cfc397; color: #6d6650; cursor: default; box-shadow: none; transform: none; }
+  .key { display: inline-block; background: var(--paper); color: var(--ink); border: 1px solid var(--ink);
+    font: 12px/1.3 ui-monospace, monospace; padding: 0 4px; margin: 0 3px; vertical-align: 1px; }
+  .muted { color: var(--teal); font-size: 15px; line-height: 1.35; }
+
+  #intro { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(480px, calc(100vw - 32px)); }
+
+  #guide { left: 16px; top: 16px; width: min(320px, calc(100vw - 32px)); padding: 14px 18px; box-shadow: 4px 4px 0 var(--crimson); }
+  #guide .gt { color: var(--crimson); font-size: 18px; }
+  #guide ol { list-style: none; margin: 8px 0 0; padding: 0; font-size: 16px; line-height: 1.5; }
+  #guide li { color: #8a8466; }
+  #guide li::before { content: attr(data-n); display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center;
+    margin-right: 8px; border: 1px solid currentColor; font-size: 13px; }
+  #guide li.on { color: var(--ink); font-weight: 600; }
+  #guide li.on::before { background: var(--crimson); color: var(--cream); border-color: var(--crimson); }
+  #guide li.done { color: var(--teal); }
+  #guide .now { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--teal); font-size: 16px; line-height: 1.4; }
+  #guide .now:empty { display: none; }
+  #guide .row { margin-top: 10px; gap: 8px; }
+  #guide .bar { height: 6px; background: var(--paper); border: 1px solid var(--ink); margin-top: 8px; }
+  #guide .bar i { display: block; height: 100%; background: var(--teal); }
+
+  #inspect { left: 16px; bottom: 16px; width: min(380px, calc(100vw - 32px)); }
+  #inspect .no, #recall .no { color: var(--crimson); font-size: 15px; }
+  #inspect .item { font-size: 30px; font-weight: 600; margin: 2px 0 6px; line-height: 1.1; }
+  #inspect .img { font-style: italic; color: var(--navy); font-size: 18px; line-height: 1.4; }
+  #inspect .hint { margin-top: 10px; }
+  #recall { left: 50%; bottom: 20px; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); }
+  #recall .q { font-size: 24px; margin: 4px 0 12px; }
+  #recall .fb { font-size: 18px; line-height: 1.4; margin-top: 10px; }
+  #recall .fb.ok { color: var(--teal); }
+  #recall .fb.no { color: var(--crimson); }
+  #result { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px)); text-align: center; }
+  #result .score { font-family: 'Cormorant SC', serif; font-weight: 700; font-size: 64px; color: var(--crimson); line-height: 1; margin: 6px 0; }
+  #result .row { justify-content: center; }
+
+  #status { left: 50%; top: 50%; transform: translate(-50%, -50%); font: italic 22px 'EB Garamond', Georgia, serif; text-align: center; padding: 14px 22px; pointer-events: none; }
+  .dots::after { content: ''; animation: dots 1.4s steps(4) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+  #tip { position: fixed; pointer-events: none; background: var(--cream); border: 2px solid var(--ink); padding: 2px 8px; font-size: 15px; white-space: nowrap; }
+  .shake { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translate(-52%, -50%); } 75% { transform: translate(-48%, -50%); } }
+</style>
+<script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+
+<div id="intro" class="card">
+  <h1>The Memory Crypt</h1>
+  <p class="lead">Memory champions don't have better brains. They put each thing they want to remember in a <i>place</i>, and make it strange. This crypt has seven niches, and each one looks different.</p>
+  <ol class="steps">
+    <li><b>Write</b> 2–7 things you need to remember, one per line.</li>
+    <li><b>Memorize:</b> walk the niches in order (I, II, III…) and connect each thing to the niche's decoration.</li>
+    <li><b>Recall:</b> the candles go out. Then name what was in each niche.</li>
+  </ol>
+  <textarea id="items" spellcheck="false" placeholder="milk&#10;passport&#10;call mom&#10;..."></textarea>
+  <div class="row">
+    <button id="summon">Summon</button>
+    <button id="example" class="ghost">Use an example</button>
+  </div>
+</div>
+
+<div id="guide" class="card hidden">
+  <div class="gt sc">The Memory Crypt</div>
+  <ol>
+    <li data-n="1">Write</li>
+    <li data-n="2">Memorize each niche</li>
+    <li data-n="3">Recall in the dark</li>
+  </ol>
+  <div class="now"></div>
+</div>
+
+<div id="status" class="card hidden"></div>
+
+<div id="inspect" class="card hidden">
+  <div class="no sc"></div>
+  <div class="item"></div>
+  <div class="img"></div>
+  <p class="muted hint"></p>
+</div>
+
+<div id="recall" class="card hidden">
+  <div class="no sc"></div>
+  <div class="q">What did you leave here?</div>
+  <form id="recallForm" autocomplete="off">
+    <input type="text" id="answer">
+    <div class="row">
+      <button type="submit" id="answerBtn">Answer</button>
+      <button type="button" id="skipBtn" class="ghost">I forget</button>
+    </div>
+  </form>
+  <div class="fb hidden"></div>
+  <div class="row hidden" id="nextRow"><button id="nextBtn">Next niche →</button><span class="muted">or press Enter</span></div>
+</div>
+
+<div id="result" class="card hidden">
+  <div class="sc" style="color:var(--navy)">You remembered</div>
+  <div class="score"></div>
+  <p class="lead verdict"></p>
+  <div class="row">
+    <button id="againBtn">Study again</button>
+    <button id="newBtn" class="ghost">New things</button>
+  </div>
+</div>
+
+<div id="tip" class="hidden"></div>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ---------- palette ----------
+// Object base colors (index used by the model). The post shader maps everything back to the crypt palette.
+const OBJ_COLORS = [0x2c4a5a, 0x4d9aa0, 0xa8dde4, 0xd0405e, 0xff9a90, 0xfff2b8, 0x0c0c0c];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+const SLOTS = 7;
+
+// ---------- renderer + pixel/dither pipeline ----------
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(1);
+document.body.prepend(renderer.domElement);
+
+const PIXEL_H = 230; // vertical resolution of the "game"
+const rt = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+const post = new THREE.ShaderMaterial({
+  uniforms: { tex: { value: rt.texture }, res: { value: new THREE.Vector2(1, 1) }, flash: { value: 0 } },
+  depthTest: false, depthWrite: false,
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`,
+  fragmentShader: `
+    uniform sampler2D tex; uniform vec2 res; uniform float flash; varying vec2 vUv;
+    const vec3 INK = vec3(.063,.086,.122), CREAM = vec3(.945,.902,.682);
+    const vec3 C1 = vec3(.122,.231,.290), C2 = vec3(.247,.478,.502), C3 = vec3(.561,.757,.788);   // cool ramp
+    const vec3 W1 = vec3(.353,.102,.180), W2 = vec3(.690,.196,.310), W3 = vec3(.886,.490,.478);   // warm ramp
+    const vec3 G1 = vec3(.353,.102,.180), G2 = vec3(.788,.420,.290), G3 = vec3(.914,.714,.420);   // gold ramp
+    float bayer2(vec2 a){ a = floor(a); return fract(dot(a, vec2(.5, a.y * .75))); }
+    float bayer4(vec2 a){ return bayer2(.5 * a) * .25 + bayer2(a); }
+    float bayer8(vec2 a){ return bayer4(.5 * a) * .25 + bayer2(a); }
+    vec3 pick(int ramp, int i){
+      if (i <= 0) return INK;
+      if (i >= 4) return CREAM;
+      if (ramp == 0) return i == 1 ? C1 : (i == 2 ? C2 : C3);
+      if (ramp == 1) return i == 1 ? W1 : (i == 2 ? W2 : W3);
+      return i == 1 ? G1 : (i == 2 ? G2 : G3);
+    }
+    void main(){
+      vec3 c = max(texture2D(tex, vUv).rgb, 0.);
+      vec3 s = pow(c, vec3(1. / 2.2));
+      float l = dot(s, vec3(.299, .587, .114)) + flash;
+      float warmth = s.r - max(s.g, s.b);
+      float gold = min(s.r, s.g) - s.b;
+      int ramp = gold > .16 ? 2 : (warmth > .07 ? 1 : 0);
+      float d = bayer8(floor(vUv * res)) - .5;
+      int i = int(floor(clamp(l * 4.6 + d * 1.1 - .1, 0., 4.)));
+      gl_FragColor = vec4(pick(ramp, i), 1.);
+    }`,
+});
+const postScene = new THREE.Scene();
+postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
+const postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+// ---------- scene ----------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05080c);
+scene.fog = new THREE.Fog(0x05080c, 5, 17);
+
+const camera = new THREE.PerspectiveCamera(68, 1, 0.05, 40);
+camera.position.set(0, 1.62, 0);
+camera.rotation.order = 'YXZ';
+const view = { yaw: 0, pitch: -0.06, tYaw: 0, tPitch: -0.06, fov: 68, tFov: 68 };
+
+const matCache = {};
+const mat = (hex, opts = {}) => {
+  const k = hex + JSON.stringify(opts);
+  return matCache[k] || (matCache[k] = new THREE.MeshLambertMaterial({ color: hex, flatShading: true, ...opts }));
+};
+// mesh at a position, with an optional x rotation
+const at = (geo, m, x, y, z, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; return o; };
+const basic = hex => new THREE.MeshBasicMaterial({ color: hex, fog: false });
+
+function canvasTex(w, h, draw, rx = 1, ry = 1) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = t.minFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(rx, ry);
+  return t;
+}
+const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const brickTex = (rx, ry) => canvasTex(64, 64, (g, w, h) => {
+  g.fillStyle = '#1c2124'; g.fillRect(0, 0, w, h);
+  for (let r = 0; r < 8; r++) for (let b = -1; b < 4; b++) {
+    const v = 120 + rnd() * 70 | 0;
+    g.fillStyle = `rgb(${v},${v + 8},${v + 6})`;
+    g.fillRect(b * 16 + (r % 2) * 8 + 1, r * 8 + 1, 14, 6);
+  }
+}, rx, ry);
+const flagTex = canvasTex(64, 64, (g, w, h) => {
+  g.fillStyle = '#1a1e20'; g.fillRect(0, 0, w, h);
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
+    const v = 90 + rnd() * 60 | 0;
+    g.fillStyle = `rgb(${v},${v + 6},${v + 4})`;
+    g.fillRect(x * 16 + 1, y * 16 + 1, 14, 14);
+  }
+}, 7, 7);
+
+const R = 6.6, H = 4.6;
+const wall = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 48, 1, true),
+  new THREE.MeshLambertMaterial({ color: 0x6f9aa0, map: brickTex(22, 4), side: THREE.BackSide }));
+wall.position.y = H / 2; scene.add(wall);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(R, 48), new THREE.MeshLambertMaterial({ color: 0x5d8088, map: flagTex }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const ceil = new THREE.Mesh(new THREE.CircleGeometry(R, 48), new THREE.MeshLambertMaterial({ color: 0x3b5a62, map: brickTex(10, 10) }));
+ceil.rotation.x = Math.PI / 2; ceil.position.y = H; scene.add(ceil);
+// ceiling ribs
+for (let i = 0; i < 6; i++) {
+  const rib = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.25, R * 2), mat(0x557a80));
+  rib.position.y = H - 0.12; rib.rotation.y = i * Math.PI / 6; scene.add(rib);
+}
+
+scene.add(new THREE.HemisphereLight(0x6fa6b0, 0x3a1420, 1.7));
+
+// central table with an open book and a bell
+const table = new THREE.Group(); scene.add(table);
+table.add(at(new THREE.CylinderGeometry(0.75, 0.75, 0.08, 20), mat(0xc03a52), 0, 0.92, 0));
+table.add(at(new THREE.CylinderGeometry(0.12, 0.2, 0.9, 10), mat(0x2c4a5a), 0, 0.45, 0));
+for (const sx of [-1, 1]) {
+  const page = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.02, 0.34), mat(0xfff2b8));
+  page.position.set(sx * 0.13, 0.98, -0.42); page.rotation.z = sx * -0.12; table.add(page);
+}
+const bell = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(0x4d9aa0));
+bell.position.set(0.42, 0.96, -0.3); table.add(bell);
+
+// chandelier with a skull
+const chand = new THREE.Group(); chand.position.y = 3.55; scene.add(chand);
+chand.add(at(new THREE.TorusGeometry(0.8, 0.05, 6, 24), mat(0x2c4a5a), 0, 0, 0, Math.PI / 2));
+for (let i = 0; i < 3; i++) {
+  const a = i * Math.PI * 2 / 3;
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.3, 4), mat(0x2c4a5a));
+  chain.position.set(Math.cos(a) * 0.4, 0.55, Math.sin(a) * 0.4); chain.rotation.z = Math.cos(a) * 0.3; chain.rotation.x = -Math.sin(a) * 0.3;
+  chand.add(chain);
+}
+const chandFlames = [];
+for (let i = 0; i < 6; i++) {
+  const a = i * Math.PI / 3;
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 6), mat(0xfff2b8));
+  c.position.set(Math.cos(a) * 0.8, 0.12, Math.sin(a) * 0.8); chand.add(c);
+  const f = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.09, 5), basic(0xffd27a));
+  f.position.set(Math.cos(a) * 0.8, 0.27, Math.sin(a) * 0.8); chand.add(f); chandFlames.push(f);
+}
+const skull = new THREE.Group(); skull.position.y = -0.3; chand.add(skull);
+skull.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), mat(0xfff2b8)));
+skull.add(at(new THREE.BoxGeometry(0.2, 0.1, 0.18), mat(0xfff2b8), 0, -0.17, 0.03));
+for (const sx of [-1, 1]) skull.add(at(new THREE.SphereGeometry(0.06, 6, 5), mat(0x0c0c0c), sx * 0.08, 0.0, 0.16));
+const chandLight = new THREE.PointLight(0xffc98a, 0, 10, 1.6);
+chandLight.position.y = 3.2; scene.add(chandLight);
+const chandState = { lit: 0.6, t: 0.6 };
+
+// dust
+const dustGeo = new THREE.BufferGeometry();
+const dustPos = new Float32Array(260 * 3);
+for (let i = 0; i < 260; i++) { dustPos[i * 3] = (rnd() - .5) * 10; dustPos[i * 3 + 1] = rnd() * H; dustPos[i * 3 + 2] = (rnd() - .5) * 10; }
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xfff2b8, size: 1, sizeAttenuation: false }));
+scene.add(dust);
+
+// ---------- landmarks ----------
+// Each niche looks different so the order can be remembered: its own wall color and one big prop.
+const lookers = []; // eyes that follow the camera
+const LANDMARKS = [
+  { name: 'the Moon', desc: 'a pale crescent moon and stars above it', wall: 0x22385a, deco(add) {
+    add(new THREE.TorusGeometry(0.5, 0.14, 6, 20, Math.PI * 1.25), mat(0xfff2b8, { emissive: 0x6a6040 }), 0, 3.65, -0.3).rotation.z = 0.9;
+    for (const [x, y] of [[-0.75, 3.35], [0.75, 3.8], [0.6, 3.3], [-0.45, 3.95]]) add(new THREE.OctahedronGeometry(0.1), mat(0xa8dde4, { emissive: 0x2a5560 }), x, y, -0.3);
+  } },
+  { name: 'the Mushrooms', desc: 'giant red-capped mushrooms growing at its foot', wall: 0x6a2030, deco(add) {
+    for (const [x, z, h, r] of [[-0.62, 0.05, 0.75, 0.34], [-0.36, 0.38, 0.38, 0.18], [0.58, 0.3, 0.5, 0.24], [0.4, 0.5, 0.25, 0.12]]) {
+      add(new THREE.CylinderGeometry(r * 0.35, r * 0.45, h, 8), mat(0xfff2b8), x, h / 2, z);
+      add(new THREE.SphereGeometry(r, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xd0405e), x, h, z);
+    }
+  } },
+  { name: 'the Bones', desc: 'a skull and crossed bones on top of it', wall: 0x2c4a5a, deco(add) {
+    for (const sx of [-1, 1]) add(new THREE.CapsuleGeometry(0.08, 1.1, 3, 6), mat(0xfff2b8), 0, 3.5, -0.4).rotation.z = sx * 0.9;
+    add(new THREE.SphereGeometry(0.32, 10, 8), mat(0xfff2b8), 0, 3.5, -0.2);
+    add(new THREE.BoxGeometry(0.28, 0.14, 0.22), mat(0xfff2b8), 0, 3.24, -0.12);
+    for (const sx of [-1, 1]) add(new THREE.SphereGeometry(0.09, 6, 5), mat(0x0c0c0c), sx * 0.12, 3.52, 0.06);
+    for (let k = 0; k < 5; k++) add(new THREE.CapsuleGeometry(0.06, 0.5, 3, 6), mat(0xfff2b8), -0.62 + k * 0.04, 0.07 + k * 0.05, 0.25 - k * 0.1).rotation.set(Math.PI / 2, k * 0.8, 0);
+  } },
+  { name: 'the Crystals', desc: 'glowing blue crystals sprouting around it', wall: 0x2a8088, deco(add) {
+    for (const [x, z, h, t] of [[-0.62, 0.1, 1.2, 0.15], [-0.42, 0.4, 0.75, -0.35], [-0.78, 0.42, 0.6, 0.5], [0.62, 0.3, 0.95, -0.2], [0.45, 0.05, 0.55, 0.4], [0.8, 0.5, 0.45, -0.5]]) {
+      add(new THREE.ConeGeometry(0.16, h, 5), mat(0xa8dde4, { emissive: 0x2a6a78 }), x, h / 2, z).rotation.z = t;
+    }
+  } },
+  { name: 'the Books', desc: 'tall leaning stacks of old books beside it', wall: 0xa0602a, deco(add) {
+    const cols = [0xd0405e, 0x2c4a5a, 0xfff2b8, 0x4d9aa0, 0xd0405e, 0xff9a90, 0x2c4a5a, 0xfff2b8];
+    cols.forEach((c, k) => add(new THREE.BoxGeometry(0.55, 0.15, 0.42), mat(c), -0.6, 0.08 + k * 0.155, 0.2).rotation.y = (k % 3 - 1) * 0.25);
+    cols.slice(0, 4).forEach((c, k) => add(new THREE.BoxGeometry(0.5, 0.15, 0.4), mat(c), 0.62, 0.08 + k * 0.155, 0.3).rotation.y = (k % 2) * 0.4);
+  } },
+  { name: 'the Spider', desc: 'a huge black spider dangling from a thread', wall: 0x8fb7bc, deco(add) {
+    // hangs off to the side, high up, so it never covers the sculpture
+    const x = -0.68;
+    add(new THREE.CylinderGeometry(0.012, 0.012, 0.35, 3), mat(0xfff2b8), x, 2.6, 0.25);
+    add(new THREE.SphereGeometry(0.22, 8, 6), mat(0x0c0c0c), x, 2.32, 0.25);
+    add(new THREE.SphereGeometry(0.14, 8, 6), mat(0x0c0c0c), x, 2.1, 0.32);
+    for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) {
+      add(new THREE.CapsuleGeometry(0.03, 0.42, 2, 4), mat(0x0c0c0c), x + sx * 0.26, 2.3 - k * 0.07, 0.25).rotation.z = sx * (1.0 + k * 0.25);
+    }
+    for (const sx of [-1, 1]) add(new THREE.SphereGeometry(0.04, 5, 4), basic(0xd0405e), x + sx * 0.055, 2.12, 0.46);
+  } },
+  { name: 'the Eye', desc: 'a giant eye above it that follows you', wall: 0xb85a6a, deco(add, g) {
+    const eye = new THREE.Group(); eye.position.set(0, 3.55, -0.1); g.add(eye);
+    eye.add(new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), mat(0xfff2b8)));
+    eye.add(at(new THREE.SphereGeometry(0.22, 10, 8), mat(0x4d9aa0), 0, 0, 0.29));
+    eye.add(at(new THREE.SphereGeometry(0.11, 8, 6), mat(0x0c0c0c), 0, 0, 0.42));
+    lookers.push(eye);
+  } },
+];
+
+// ---------- niches ----------
+const dirOf = yaw => new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+const niches = [];
+for (let i = 0; i < SLOTS; i++) {
+  const yaw = -i * Math.PI * 2 / SLOTS;
+  const g = new THREE.Group();
+  g.position.copy(dirOf(yaw).multiplyScalar(5.7));
+  g.rotation.y = yaw;
+  scene.add(g);
+  const lm = LANDMARKS[i];
+  // a little emissive keeps each wall's own color even under warm candlelight
+  const stone = mat(0x6f9aa0), dark = mat(lm.wall, { emissive: lm.wall, emissiveIntensity: 0.35 });
+  const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); g.add(o); return o; };
+  add(new THREE.BoxGeometry(1.7, 2.6, 0.2), dark, 0, 1.3, -0.75);
+  add(new THREE.BoxGeometry(0.32, 2.8, 1.0), stone, -1.0, 1.4, -0.3);
+  add(new THREE.BoxGeometry(0.32, 2.8, 1.0), stone, 1.0, 1.4, -0.3);
+  add(new THREE.BoxGeometry(2.3, 0.36, 1.0), stone, 0, 2.95, -0.3);
+  add(new THREE.BoxGeometry(0.3, 0.42, 1.06), mat(0x8fb7bc), 0, 2.95, -0.3); // keystone
+  add(new THREE.CylinderGeometry(0.36, 0.42, 0.85, 10), mat(0x557a80), 0, 0.425, -0.25);
+  add(new THREE.BoxGeometry(0.9, 0.08, 0.9), mat(0xc03a52), 0, 0.88, -0.25);
+  // candle on a little shelf
+  add(new THREE.BoxGeometry(0.3, 0.06, 0.25), stone, 0.72, 1.32, 0.12);
+  add(new THREE.CylinderGeometry(0.045, 0.05, 0.26, 6), mat(0xfff2b8), 0.72, 1.48, 0.12);
+  const flame = add(new THREE.ConeGeometry(0.035, 0.11, 5), basic(0xffd27a), 0.72, 1.67, 0.12);
+  const light = new THREE.PointLight(0xffe2b8, 0, 4.2, 1.5);
+  light.position.set(0.45, 1.75, 0.6); g.add(light);
+  // plaque
+  const plaque = add(new THREE.PlaneGeometry(0.62, 0.26), new THREE.MeshBasicMaterial({
+    map: canvasTex(64, 28, (c, w, h) => {
+      c.fillStyle = '#5a1a2e'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#f1e6ae'; c.font = 'bold 20px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(ROMAN[i], w / 2, h / 2 + 1);
+    }),
+  }), 0, 2.95, 0.21);
+  plaque.material.color.setScalar(0.85);
+  lm.deco(add, g);
+  const slot = new THREE.Group(); slot.position.set(0, 0.92, -0.25); g.add(slot);
+  const hit = add(new THREE.BoxGeometry(2.2, 3.2, 1.2), new THREE.MeshBasicMaterial({ visible: false }), 0, 1.5, -0.2);
+  hit.userData.niche = i;
+  niches.push({ i, yaw, lm, g, flame, light, slot, hit, lit: 0, tLit: 0, hover: 0, item: null, image: '', obj: null, phase: 0 });
+}
+
+// ---------- building objects from primitives ----------
+const GEO = {
+  sphere: new THREE.SphereGeometry(0.5, 12, 9),
+  dome: new THREE.SphereGeometry(0.5, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+  gem: new THREE.OctahedronGeometry(0.5),
+  box: new THREE.BoxGeometry(1, 1, 1),
+  cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1, 12),
+  cone: new THREE.ConeGeometry(0.5, 1, 12),
+  torus: new THREE.TorusGeometry(0.4, 0.12, 8, 18),
+  capsule: new THREE.CapsuleGeometry(0.3, 0.4, 4, 10),
+};
+const D2R = Math.PI / 180;
+function buildObject(parts) {
+  const inner = new THREE.Group();
+  for (const p of parts) {
+    const geo = GEO[p.s] || GEO.box;
+    const m = new THREE.Mesh(geo, mat(OBJ_COLORS[Math.max(0, Math.min(6, p.c | 0))] ?? OBJ_COLORS[5]));
+    const v = (a, d) => Array.isArray(a) ? [0, 1, 2].map(k => Number.isFinite(+a[k]) ? +a[k] : d) : [d, d, d];
+    m.position.set(...v(p.p, 0));
+    m.scale.set(...v(p.z, 0.3).map(x => Math.max(0.01, Math.abs(x))));
+    m.rotation.set(...v(p.r, 0).map(x => x * D2R));
+    inner.add(m);
+  }
+  const box = new THREE.Box3().setFromObject(inner);
+  const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+  inner.position.set(-c.x, -box.min.y, -c.z);
+  const outer = new THREE.Group(); outer.add(inner);
+  outer.userData.fit = 1.4 / Math.max(size.x, size.y * 0.85, size.z, 0.01);
+  outer.scale.setScalar(0.0001);
+  return outer;
+}
+
+// Hand-built images for the example list, also used when the AI can't be reached.
+const P = (s, c, p, z, r = [0, 0, 0]) => ({ s, c, p, z, r });
+const eyes = (y, z, sep = 0.12, size = 0.16) => [-1, 1].flatMap(k => [
+  P('sphere', 5, [k * sep, y, z], [size, size, size]),
+  P('sphere', 6, [k * sep, y, z + size * 0.42], [size * 0.42, size * 0.42, size * 0.42]),
+]);
+const HANDMADE = [
+  { k: ['milk'], image: 'A milk carton on frog legs, sobbing tiny blue tears onto the stone.', parts: [
+    P('box', 5, [0, .45, 0], [.5, .6, .45]), P('box', 3, [0, .8, 0], [.33, .33, .46], [0, 0, 45]),
+    ...eyes(.58, .23), P('sphere', 2, [-.12, .42, .25], [.06, .11, .06]), P('sphere', 2, [.13, .33, .25], [.06, .11, .06]),
+    P('capsule', 1, [-.2, .08, .08], [.28, .32, .28], [0, 0, 25]), P('capsule', 1, [.2, .08, .08], [.28, .32, .28], [0, 0, -25])] },
+  { k: ['passport'], image: 'Your passport grew wings and one unblinking eye. It is about to fly off without you.', parts: [
+    P('box', 3, [0, .55, 0], [.5, .7, .1]), P('sphere', 5, [0, .58, .06], [.28, .28, .08]), P('sphere', 6, [0, .58, .1], [.11, .11, .05]),
+    P('cone', 2, [-.45, .68, 0], [.25, .55, .06], [0, 0, 70]), P('cone', 2, [.45, .68, 0], [.25, .55, .06], [0, 0, -70]),
+    P('cylinder', 0, [0, .1, 0], [.05, .25, .05])] },
+  { k: ['mom', 'mother'], image: 'A pink snail whose shell is a ringing telephone. It will not stop until you call Mom.', parts: [
+    P('sphere', 4, [0, .5, -.05], [.55, .55, .42]), P('torus', 3, [0, .5, -.05], [.8, .8, 1.1]),
+    P('capsule', 1, [0, .1, .12], [.3, .25, 1.1], [90, 0, 0]), P('capsule', 6, [0, .9, -.05], [.16, .55, .16], [0, 0, 90]),
+    P('sphere', 6, [-.27, .9, -.05], [.16, .12, .16]), P('sphere', 6, [.27, .9, -.05], [.16, .12, .16]),
+    P('cylinder', 2, [-.08, .32, .42], [.03, .28, .03]), P('cylinder', 2, [.08, .32, .42], [.03, .28, .03]), ...eyes(.48, .42, .08, .1)] },
+  { k: ['umbrella'], image: 'An umbrella octopus raining indoors, wriggling toward the door.', parts: [
+    P('cone', 3, [0, .8, 0], [.95, .38, .95]), P('cylinder', 5, [0, .4, 0], [.04, .75, .04]), P('torus', 5, [.08, .05, 0], [.25, .25, .25]),
+    P('capsule', 1, [-.32, .3, .1], [.12, .55, .12], [0, 0, -18]), P('capsule', 1, [.32, .3, .1], [.12, .55, .12], [0, 0, 18]),
+    P('capsule', 1, [0, .3, -.32], [.12, .55, .12], [18, 0, 0]), ...eyes(.72, .36, .15, .14),
+    P('sphere', 2, [-.4, .55, .3], [.04, .08, .04]), P('sphere', 2, [.35, .45, .35], [.04, .08, .04])] },
+  { k: ['key'], image: 'A grinning skull wearing your keys as a jangling crown.', parts: [
+    P('sphere', 5, [0, .4, 0], [.48, .44, .44]), P('box', 5, [0, .16, .05], [.3, .12, .3]),
+    P('sphere', 6, [-.1, .45, .18], [.13, .13, .07]), P('sphere', 6, [.1, .45, .18], [.13, .13, .07]),
+    P('torus', 2, [0, .7, 0], [.62, .62, .62], [90, 0, 0]),
+    P('box', 2, [-.24, .84, 0], [.06, .3, .03], [0, 0, 15]), P('box', 2, [.24, .84, 0], [.06, .3, .03], [0, 0, -15]),
+    P('box', 2, [0, .86, .24], [.06, .32, .03]), P('box', 3, [0, .86, -.24], [.06, .32, .03])] },
+];
+const EXAMPLE = ['milk', 'passport', 'call mom', 'umbrella', 'keys', 'batteries', 'thesis draft'];
+
+function hash(s) { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.codePointAt(0), 16777619); return h >>> 0; }
+// A little creature built from the item's name, for anything the AI couldn't make.
+function improvise(item) {
+  const hm = HANDMADE.find(h => h.k.some(k => item.toLowerCase().includes(k)));
+  if (hm) return { item, image: hm.image, parts: hm.parts };
+  let s = hash(item) || 1; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const body = ['sphere', 'box', 'cone', 'capsule', 'cylinder'][r() * 5 | 0];
+  const col = [1, 2, 3, 4, 0][r() * 5 | 0];
+  const legs = 2 + (r() * 3 | 0);
+  const parts = [P(body, col, [0, .45, 0], [.55, .6, .5])];
+  parts.push(...eyes(.6, .24, .13, .17 + r() * .08));
+  for (let i = 0; i < legs; i++) {
+    const a = (i / legs) * Math.PI * 2;
+    parts.push(P('capsule', (col + 2) % 6, [Math.cos(a) * .22, .08, Math.sin(a) * .22], [.12, .3, .12], [Math.sin(a) * 25, 0, -Math.cos(a) * 25]));
+  }
+  if (r() > .5) parts.push(P('cone', 3, [0, .92, 0], [.3, .4, .3]));
+  else parts.push(P('torus', 5, [0, .95, 0], [.4, .4, .4], [90, 0, 0]));
+  const adj = ['trembling', 'very polite', 'furious', 'tiny', 'sleepy', 'screaming'][r() * 6 | 0];
+  return { item, image: `A ${adj} creature that has eaten your “${item}” and will not give it back.`, parts };
+}
+
+// ---------- AI ----------
+const PROXY = 'https://itp-ima-replicate-proxy.web.app/api/create_n_get';
+// Sonnet first: it is much better at getting real proportions right; Haiku is the fallback.
+const MODELS = ['anthropic/claude-4.5-sonnet', 'anthropic/claude-4.5-haiku'];
+const SYSTEM = `You build small 3D sculptures for a memory palace game, out of three.js primitives.
+The player must RECOGNIZE the item at a glance. Recognizability comes first; strangeness is only a small twist on top.
+
+Steps:
+1. "object": pick the most iconic concrete physical thing for the item. If the item is already a thing (guitar, toothbrush), use it. If it is an action or idea, pick the object everyone associates with it (call mom -> a telephone handset; deadline -> an hourglass or alarm clock; gym -> a dumbbell; rent -> a house key or little house).
+2. "features": list the 3-6 visible features that make that object instantly identifiable, with rough proportions (e.g. guitar: figure-8 body of two overlapping flattened spheres, round sound hole, long thin neck about as long as the body, wider headstock with tuning pegs).
+3. "twist": ONE small absurd addition that does not hide the object (tiny legs, one pair of eyes on it, it is melting, sweating, on fire, too big a part). Use at most 4 parts for the twist.
+4. "parts": build the object faithfully from the features, at true proportions, then add the twist. Most parts must describe the object itself. Do NOT turn it into a generic blob creature.
+5. "image": one English sentence (max 24 words) describing the sculpture together with the niche's landmark, so the player can link the two in their mind.
+
+Return ONLY one JSON object, no prose, no code fence:
+{"object": "...", "features": ["..."], "twist": "...", "image": "...", "parts": [{"s": "sphere|dome|box|cylinder|cone|torus|capsule|gem", "c": 0-6, "p": [x,y,z], "z": [sx,sy,sz], "r": [rx,ry,rz]}]}
+
+Primitives (before scaling, each about 1 unit across, centered on p): sphere; dome = top half of a sphere (flat side down); box; cylinder (axis along y); cone (point up, axis along y); torus (ring lying in the x-y plane, facing +z; rotate x 90 to lay it flat); capsule (axis along y); gem = octahedron.
+Orientation: the viewer looks from the front (+z) toward -z. Show each object from its most recognizable side: things recognized by their side profile (bicycle, car, shoe, fish, cat, dog, scissors, a pen lying down) run along x with that profile facing +z. A bicycle's wheels are tori in the x-y plane, side by side along x.
+Space: the sculpture stands on a pedestal. y from 0 (bottom) to about 1; x and z within -0.5..0.5; the front faces +z, so put faces, labels and holes on the +z side. Scale "z" sets the size along each axis. Rotations in degrees, applied x then y then z. Numbers only, no expressions.
+Colors: 0 dark navy, 1 teal, 2 pale blue, 3 crimson, 4 pink, 5 cream, 6 black. Choose colors that keep parts distinguishable; use 6 black for holes, pupils and details.
+Use 8-20 parts. Parts that belong together must touch or overlap; nothing floats unless it is meant to.
+
+Example for "umbrella": object umbrella; features: wide shallow canopy, thin straight shaft through the middle, J-shaped hook handle at the bottom, small tip on top. parts: {"s":"cone","c":3,"p":[0,0.82,0],"z":[0.95,0.3,0.95]}, {"s":"cylinder","c":5,"p":[0,0.45,0],"z":[0.03,0.8,0.03]}, {"s":"torus","c":5,"p":[0.07,0.07,0],"z":[0.18,0.18,0.25],"r":[0,0,180]}, {"s":"sphere","c":5,"p":[0,1.0,0],"z":[0.05,0.05,0.05]} ... then the twist.`;
+
+function parseLoose(text) {
+  const body = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+  try { return JSON.parse(body); } catch (e) { return JSON.parse(body.replace(/,\s*([\]}])/g, '$1')); }
+}
+
+// One request per item, so they arrive one by one and a bad answer only costs that item.
+async function askOne(item, lm) {
+  for (const model of MODELS) {
+    try {
+      const res = await fetch(PROXY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ model, input: { system_prompt: SYSTEM, prompt: `Item: ${item}\nThe niche it sits in is marked by ${lm.desc}. Mention that landmark in the image sentence only; do not build it.`, temperature: 0.5, max_tokens: 3000 } }),
+        signal: AbortSignal.timeout(70000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || res.status);
+      const e = parseLoose(Array.isArray(data.output) ? data.output.join('') : String(data.output ?? ''));
+      if (Array.isArray(e.parts) && e.parts.length) return { item, image: String(e.image || ''), parts: e.parts, ai: true };
+      throw new Error('no parts');
+    } catch (err) { console.warn('crypt AI failed for', item, 'with', model, err); }
+  }
+  return { ...improvise(item), ai: false };
+}
+
+// ---------- UI helpers ----------
+const $ = s => document.querySelector(s);
+const show = (el, on = true) => el.classList.toggle('hidden', !on);
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function status(html) { const el = $('#status'); el.innerHTML = html || ''; show(el, !!html); }
+// The guide card in the corner: which step we're on, and what to do right now.
+function guide(step, html) {
+  show($('#guide'), step > 0);
+  $('#guide').querySelectorAll('li').forEach((li, k) => {
+    li.className = k + 1 < step || step === 4 ? 'done' : k + 1 === step ? 'on' : '';
+  });
+  $('#guide .now').innerHTML = html || '';
+}
+const label = n => `Niche ${ROMAN[n.i]} · ${n.lm.name}`;
+
+// ---------- state ----------
+const S = { phase: 'intro', used: [], inspecting: null, visited: new Set(), recallAt: 0, score: 0, answered: false, improvised: 0 };
+const usedSlots = n => Array.from({ length: n }, (_, k) => Math.round(k * SLOTS / n) % SLOTS);
+
+function turnTo(n, fov = 68, pitch = -0.06) {
+  // shortest way round
+  let d = n.yaw - view.tYaw;
+  d = Math.atan2(Math.sin(d), Math.cos(d));
+  view.tYaw += d; view.tPitch = pitch; view.tFov = fov;
+}
+
+function place(n, entry) {
+  if (n.obj) n.slot.remove(n.obj);
+  n.item = entry.item; n.image = entry.image;
+  n.obj = buildObject(entry.parts);
+  n.obj.userData.target = n.obj.userData.fit;
+  n.slot.add(n.obj);
+}
+const appear = (n, on) => { if (n.obj) n.obj.userData.target = on ? n.obj.userData.fit : 0.0001; };
+
+// smoke puffs for a wrong answer
+const puffs = [];
+function smoke(n) {
+  const base = n.slot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.4, 0));
+  for (let k = 0; k < 16; k++) {
+    const m = new THREE.Mesh(GEO.sphere, mat(k % 2 ? 0xd0405e : 0xff9a90));
+    m.position.copy(base);
+    m.userData.v = new THREE.Vector3((rnd() - .5) * 1.4, rnd() * 1.4 + .3, (rnd() - .5) * 1.4);
+    m.userData.life = 1;
+    m.scale.setScalar(0.12 + rnd() * 0.12);
+    scene.add(m); puffs.push(m);
+  }
+}
+let flash = 0;
+
+// ---------- flow ----------
+$('#example').onclick = () => { $('#items').value = EXAMPLE.join('\n'); $('#items').focus(); };
+$('#summon').onclick = summon;
+$('#items').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) summon(); });
+
+async function summon() {
+  const items = $('#items').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, SLOTS);
+  if (items.length < 2) { const c = $('#intro'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); return; }
+  show($('#intro'), false);
+  S.phase = 'summoning';
+  S.used = usedSlots(items.length).map(i => niches[i]);
+  niches.forEach(n => { n.tLit = 0; if (n.obj) { n.slot.remove(n.obj); n.obj = null; } n.item = null; });
+  S.used.forEach(n => n.tLit = 0.25);
+  chandState.t = 0.35;
+  guide(1, 'The crypt is sculpting each thing out of stone and wax. It takes about 20 seconds.');
+  status('The crypt is listening<span class="dots"></span>');
+  const pending = items.map((item, k) => askOne(item, S.used[k].lm));
+  S.improvised = 0;
+  for (let k = 0; k < S.used.length; k++) {
+    const n = S.used[k];
+    const entry = await pending[k];
+    if (!entry.ai) S.improvised++;
+    status('');
+    guide(1, `Placing <b>${esc(entry.item)}</b> in ${label(n)} (${k + 1} of ${S.used.length})`);
+    turnTo(n);
+    await wait(420);
+    place(n, entry);
+    n.tLit = 1; flash = 0.25;
+    await wait(650);
+  }
+  chandState.t = 0.6;
+  startStudy();
+}
+
+function startStudy() {
+  S.phase = 'study';
+  S.visited = new Set();
+  inspect(S.used[0]);
+}
+
+// guide panel during memorizing: progress + walk controls
+function studyGuide() {
+  const total = S.used.length, seen = S.visited.size, all = seen === total;
+  const cur = S.inspecting ? S.used.indexOf(S.inspecting) : -1;
+  guide(2, `
+    ${all ? 'You have seen every niche. Walk them once more if you like, then put the candles out.'
+          : 'Go in order. For each niche, picture the creature <i>with</i> its decoration.'}
+    <div class="bar"><i style="width:${seen / total * 100}%"></i></div>
+    <p class="muted" style="margin-top:4px">${seen} of ${total} niches studied${S.improvised ? ` · the AI missed ${S.improvised}, so the crypt improvised` : ''}</p>
+    <div class="row">
+      <button class="ghost" id="prevBtn">← Prev</button>
+      <button ${all ? 'class="ghost"' : ''} id="walkBtn">${cur === total - 1 ? 'Back to I' : 'Next niche'} →</button>
+    </div>
+    <div class="row"><button id="blowBtn" ${all ? '' : 'disabled'}>${all ? 'Blow out the candles' : `Study all ${total} first`}</button></div>
+    <p class="muted" style="margin-top:8px">Drag to look around · click a niche · <span class="key">←</span><span class="key">→</span></p>`);
+  $('#prevBtn').onclick = () => step(-1);
+  $('#walkBtn').onclick = () => step(1);
+  $('#blowBtn').onclick = blowOut;
+}
+function step(d) {
+  const list = S.used;
+  const cur = S.inspecting ? list.indexOf(S.inspecting) : nearest();
+  inspect(list[(cur + d + list.length) % list.length]);
+}
+const angleTo = n => Math.abs(Math.atan2(Math.sin(n.yaw - view.tYaw), Math.cos(n.yaw - view.tYaw)));
+const nearest = () => S.used.reduce((b, n, k) => angleTo(n) < angleTo(S.used[b]) ? k : b, 0);
+
+function inspect(n) {
+  S.inspecting = n;
+  S.visited.add(n);
+  turnTo(n, 52, 0.03);
+  const c = $('#inspect');
+  c.querySelector('.no').textContent = label(n);
+  c.querySelector('.item').textContent = n.item;
+  c.querySelector('.img').textContent = n.image;
+  c.querySelector('.hint').innerHTML = `Say it to yourself: “<b>${esc(n.item)}</b> is in the niche with ${esc(n.lm.name)}.”`;
+  show(c);
+  if (S.phase === 'study') studyGuide();
+}
+function uninspect() {
+  if (!S.inspecting) return;
+  view.tFov = 68; view.tPitch = -0.06;
+  S.inspecting = null; show($('#inspect'), false);
+  if (S.phase === 'study') studyGuide();
+}
+
+async function blowOut() {
+  uninspect();
+  S.phase = 'dark';
+  guide(3, 'The candles are going out. Try to keep the crypt in your head.');
+  for (const n of S.used) { turnTo(n); await wait(380); n.tLit = 0; appear(n, false); await wait(260); }
+  chandState.t = 0.12;
+  status('Now walk the crypt in your mind<span class="dots"></span>');
+  await wait(1600);
+  status('');
+  S.phase = 'recall'; S.recallAt = 0; S.score = 0;
+  nextRecall();
+}
+
+function nextRecall() {
+  if (S.recallAt >= S.used.length) return finish();
+  const n = S.used[S.recallAt];
+  turnTo(n, 56, 0.03);
+  n.tLit = 1;
+  S.answered = false;
+  guide(3, `The candles come back in the same order you walked. Look at the decoration, then remember what sat with it.<p class="muted" style="margin-top:6px">${S.score} right so far</p>`);
+  const c = $('#recall');
+  c.querySelector('.no').textContent = `${label(n)} · ${S.recallAt + 1} of ${S.used.length}`;
+  show($('#recallForm')); show(c.querySelector('.fb'), false); show($('#nextRow'), false);
+  $('#answer').value = '';
+  show(c);
+  setTimeout(() => $('#answer').focus(), 50);
+}
+
+const norm = s => s.toLowerCase().replace(/[\s\p{P}]+/gu, '');
+function matches(guess, item) {
+  const g = norm(guess), t = norm(item);
+  if (!g) return false;
+  if (g === t || t.includes(g) && g.length >= Math.min(3, t.length) || g.includes(t)) return true;
+  const words = w => w.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x => x.length >= 3);
+  const tw = words(item);
+  if (words(guess).some(w => tw.some(x => x.startsWith(w) || w.startsWith(x)))) return true;
+  return false;
+}
+
+// Same meaning in other words or another language? Let the model decide.
+async function judge(guess, item) {
+  try {
+    const res = await fetch(PROXY, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ model: MODELS[0], input: {
+        system_prompt: 'You check answers in a memory game. Reply with only YES or NO: does the guess refer to the same thing as the item? Accept synonyms, small typos and partial but clearly identifying answers.',
+        prompt: `Item: ${item}\nGuess: ${guess}`, temperature: 0, max_tokens: 1024 } }),
+      signal: AbortSignal.timeout(12000),
+    });
+    const data = await res.json();
+    return /yes/i.test(Array.isArray(data.output) ? data.output.join('') : String(data.output));
+  } catch (e) { return false; }
+}
+
+async function answer(guess) {
+  if (S.answered) return;
+  S.answered = true;
+  const n = S.used[S.recallAt];
+  const fb = $('#recall .fb');
+  let ok = guess != null && matches(guess, n.item);
+  if (!ok && guess && guess.trim()) {
+    $('#answerBtn').disabled = true;
+    fb.className = 'fb'; fb.innerHTML = 'The crypt considers your answer<span class="dots"></span>'; show(fb);
+    ok = await judge(guess, n.item);
+    $('#answerBtn').disabled = false;
+  }
+  if (ok) { S.score++; flash = 0.35; fb.className = 'fb ok'; fb.innerHTML = `Yes: <b>${esc(n.item)}</b>. ${esc(n.image)}`; }
+  else { smoke(n); fb.className = 'fb no'; fb.innerHTML = `It was <b>${esc(n.item)}</b>. ${esc(n.image)}`; }
+  appear(n, true);
+  show($('#recallForm'), false); show(fb); show($('#nextRow'));
+  $('#nextBtn').focus();
+}
+$('#recallForm').onsubmit = e => { e.preventDefault(); answer($('#answer').value); };
+$('#skipBtn').onclick = () => answer(null);
+$('#nextBtn').onclick = () => { S.recallAt++; nextRecall(); };
+
+function finish() {
+  show($('#recall'), false);
+  S.phase = 'result';
+  chandState.t = 0.6;
+  S.used.forEach(n => { n.tLit = 1; appear(n, true); });
+  const total = S.used.length, sc = S.score;
+  $('#result .score').textContent = `${sc} / ${total}`;
+  $('#result .verdict').textContent = sc === total ? 'Every niche answered. The crypt approves.'
+    : sc >= total / 2 ? 'Most of it stayed. Walk the niches once more and the rest will stick.'
+    : 'Look again, slowly. Let each creature really touch its decoration.';
+  guide(4, 'Done. Everything is lit again. Drag around and click any niche to look at it again.');
+  show($('#result'));
+}
+$('#againBtn').onclick = () => { show($('#result'), false); startStudy(); };
+$('#newBtn').onclick = () => {
+  show($('#result'), false); uninspect(); guide(0);
+  S.used.forEach(n => { n.tLit = 0; appear(n, false); });
+  S.phase = 'intro'; chandState.t = 0.6;
+  show($('#intro')); $('#items').focus();
+};
+
+// ---------- input: drag to look, click to inspect ----------
+const canvas = renderer.domElement;
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let drag = null, hovered = null;
+function nicheAt(x, y) {
+  if (!['study', 'result'].includes(S.phase)) return null;
+  ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(niches.filter(n => n.item).map(n => n.hit));
+  return hits.length ? niches[hits[0].object.userData.niche] : null;
+}
+canvas.addEventListener('pointerdown', e => {
+  drag = { x: e.clientX, y: e.clientY, yaw: view.tYaw, pitch: view.tPitch, moved: false };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  const tip = $('#tip');
+  if (drag) {
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; canvas.classList.add('dragging'); }
+    if (drag.moved) {
+      if (S.inspecting) uninspect();
+      view.tYaw = drag.yaw + dx * 0.005;
+      view.tPitch = Math.max(-0.9, Math.min(0.9, drag.pitch + dy * 0.004));
+    }
+    show(tip, false);
+    return;
+  }
+  hovered = nicheAt(e.clientX, e.clientY);
+  canvas.classList.toggle('pointing', !!hovered && !S.inspecting);
+  if (hovered && !S.inspecting) {
+    tip.innerHTML = `Click to inspect · ${label(hovered)}`;
+    tip.style.left = e.clientX + 16 + 'px'; tip.style.top = e.clientY + 10 + 'px';
+    show(tip);
+  } else show(tip, false);
+});
+canvas.addEventListener('pointerup', e => {
+  const wasDrag = drag?.moved; drag = null; canvas.classList.remove('dragging');
+  if (wasDrag) return;
+  if (S.inspecting) return uninspect();
+  const n = nicheAt(e.clientX, e.clientY);
+  if (n) { show($('#tip'), false); inspect(n); }
+});
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') uninspect();
+  if (S.phase === 'recall' && S.answered && e.key === 'Enter' && document.activeElement !== $('#nextBtn')) { e.preventDefault(); $('#nextBtn').click(); }
+  if (['study', 'result'].includes(S.phase) && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && document.activeElement.tagName !== 'INPUT') step(e.key === 'ArrowRight' ? 1 : -1);
+});
+
+// ---------- resize + loop ----------
+function resize() {
+  renderer.setSize(innerWidth, innerHeight);
+  const h = PIXEL_H, w = Math.round(PIXEL_H * innerWidth / innerHeight);
+  rt.setSize(w, h);
+  post.uniforms.res.value.set(w, h);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+const clock = new THREE.Clock();
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  if (S.phase === 'intro' && !drag) view.tYaw += dt * 0.08;
+  const k = 1 - Math.exp(-dt * 5);
+  view.yaw += (view.tYaw - view.yaw) * k;
+  view.pitch += (view.tPitch - view.pitch) * k;
+  view.fov += (view.tFov - view.fov) * k;
+  camera.rotation.set(view.pitch, view.yaw, 0);
+  camera.fov = view.fov; camera.updateProjectionMatrix();
+
+  for (const n of niches) {
+    n.lit += (n.tLit - n.lit) * (1 - Math.exp(-dt * 4));
+    n.hover += ((hovered === n && !S.inspecting ? 1 : 0) - n.hover) * k;
+    const flick = 0.82 + 0.1 * Math.sin(t * 11 + n.i * 3) + 0.08 * Math.sin(t * 23.7 + n.i);
+    n.light.intensity = n.lit * 16 * flick + n.hover * 8;
+    n.flame.scale.setScalar(Math.max(0.001, n.lit) * (0.85 + 0.15 * flick));
+    if (n.obj) {
+      const s = n.obj.scale.x, tgt = n.obj.userData.target;
+      n.obj.scale.setScalar(s + (tgt - s) * (1 - Math.exp(-dt * (tgt > s ? 7 : 10))));
+      n.obj.rotation.y = Math.sin(t * 0.6 + n.i) * 0.5;
+      n.obj.position.y = Math.sin(t * 1.7 + n.i) * 0.025;
+    }
+  }
+  chandState.lit += (chandState.t - chandState.lit) * (1 - Math.exp(-dt * 3));
+  chandLight.intensity = chandState.lit * 45 * (0.92 + 0.08 * Math.sin(t * 7));
+  chandFlames.forEach((f, i) => f.scale.setScalar(Math.max(0.001, chandState.lit / 0.6) * (0.9 + 0.1 * Math.sin(t * 13 + i))));
+  lookers.forEach(e => e.lookAt(camera.position));
+  chand.rotation.y = Math.sin(t * 0.3) * 0.08;
+  skull.rotation.y = Math.sin(t * 0.5) * 0.4;
+
+  for (let i = 0; i < dustPos.length; i += 3) {
+    dustPos[i + 1] -= dt * 0.04; dustPos[i] += Math.sin(t + i) * dt * 0.02;
+    if (dustPos[i + 1] < 0) dustPos[i + 1] = H;
+  }
+  dustGeo.attributes.position.needsUpdate = true;
+
+  for (let i = puffs.length - 1; i >= 0; i--) {
+    const m = puffs[i];
+    m.userData.life -= dt * 0.9;
+    m.position.addScaledVector(m.userData.v, dt);
+    m.userData.v.multiplyScalar(1 - dt * 1.5);
+    m.scale.multiplyScalar(1 - dt * 0.8);
+    if (m.userData.life <= 0) { scene.remove(m); puffs.splice(i, 1); }
+  }
+
+  flash *= Math.exp(-dt * 4);
+  post.uniforms.flash.value = flash;
+
+  renderer.setRenderTarget(rt); renderer.render(scene, camera);
+  renderer.setRenderTarget(null); renderer.render(postScene, postCam);
+  requestAnimationFrame(loop);
+}
+window.crypt = { niches, S, view }; // handy for poking at it from the console
+loop();
+</script>
+</body>
+</html>
