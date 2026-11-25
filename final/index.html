@@ -1,0 +1,249 @@
+<title>Whose Voice? · In a Grove</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: a full-bleed picture stage (the grove, then each person's scene) with subtitles; your pocket of word slips sits under it. Single night look by design. */
+:root{
+  --dusk:#0d1410; --panel:#141e18; --line:#25352b; --light:#efe6cf; --muted:#9fb0a3;
+  --slip:#efe6cf; --slip-ink:#2a241a; --gold:#e2bd6c; --blood:#b8433a;
+  --f-text:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",Georgia,serif;
+  --f-ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--dusk);color:var(--light);font-family:var(--f-ui);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 28px}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:12px}
+.goal{display:flex;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;align-items:baseline}
+.goal b{font-family:var(--f-text);font-size:20px;color:var(--gold)}
+.goal span{color:var(--muted);font-size:13px}
+.stage{position:relative;overflow:hidden;aspect-ratio:16/9;max-height:76vh;width:100%;background:#000;border:1px solid var(--line)}
+@media (max-width:640px){.stage{aspect-ratio:4/5}}
+.bg{position:absolute;inset:-4%;background-size:cover;background-position:center;transition:transform .25s ease-out}
+.bg.kb{animation:kb 18s ease-out forwards}
+@keyframes kb{from{transform:scale(1.02)}to{transform:scale(1.12)}}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 50%,rgba(0,0,0,.78) 100%);pointer-events:none}
+canvas.leaves{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cap{position:absolute;left:0;right:0;top:0;padding:14px 18px;font-family:var(--f-text);font-size:clamp(15px,2vw,19px);text-shadow:0 1px 8px #000}
+.cap small{display:block;font-family:var(--f-ui);font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.door{position:absolute;transform:translate(-50%,-50%);border:none;background:rgba(10,14,11,.35);color:var(--gold);font-family:var(--f-text);font-weight:700;
+  font-size:clamp(17px,2.4vw,26px);padding:6px 14px;cursor:pointer;border-radius:2px;text-shadow:0 0 18px rgba(226,189,108,.9);animation:glow 2.8s ease-in-out infinite;backdrop-filter:blur(2px)}
+.door.seen{animation:none;color:var(--muted);text-shadow:none}
+@keyframes glow{50%{text-shadow:0 0 28px rgba(226,189,108,1);transform:translate(-50%,-50%) scale(1.04)}}
+.sub{position:absolute;left:0;right:0;bottom:0;padding:18px clamp(16px,4vw,40px) 18px;display:grid;gap:10px}
+.say{font-family:var(--f-text);font-size:clamp(18px,2.6vw,26px);line-height:1.6;margin:0;text-shadow:0 2px 10px #000;opacity:0;transform:translateY(8px);transition:opacity .6s,transform .6s;text-wrap:balance}
+.say.in{opacity:1;transform:none}
+.grab{border:none;background:none;font:inherit;color:var(--gold);padding:0 3px;cursor:pointer;border-bottom:2px solid var(--gold);text-shadow:0 0 14px rgba(226,189,108,.8)}
+.grab.got{border-bottom-color:transparent;color:#cfc3a4;text-shadow:none}
+.ctl{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.tap{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.btn{font-family:var(--f-ui);font-weight:600;font-size:14px;padding:9px 15px;border:1.5px solid var(--gold);background:var(--gold);color:#1c160a;cursor:pointer;border-radius:3px}
+.btn.ghost{background:rgba(0,0,0,.35);color:var(--gold)}
+.btn:focus-visible,.door:focus-visible,.grab:focus-visible,.slot:focus-visible,.chip:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.pocket{background:var(--panel);border:1px solid var(--line);padding:10px 12px;display:grid;gap:8px}
+.pocket .lab{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.slips{display:flex;flex-wrap:wrap;gap:6px;min-height:34px}
+.chip{font-family:var(--f-text);font-size:16px;padding:5px 11px 4px;background:var(--slip);color:var(--slip-ink);border:none;cursor:pointer;border-radius:2px;transform:rotate(var(--r,0deg));display:inline-flex;gap:6px;align-items:baseline}
+.chip small{font-family:var(--f-ui);font-size:10px;color:#7a6f5c}
+.chip.used{opacity:.4}
+.chip.new{animation:pop .55s}
+@keyframes pop{0%{transform:scale(.3) rotate(var(--r))}70%{transform:scale(1.15) rotate(var(--r))}}
+.fly{position:fixed;z-index:30;pointer-events:none;font-family:var(--f-text);font-size:16px;padding:5px 11px;background:var(--slip);color:var(--slip-ink);border-radius:2px}
+.zoom{position:fixed;z-index:20;pointer-events:none;font-family:var(--f-text);font-weight:700;color:var(--gold);white-space:nowrap}
+.sheet{position:absolute;inset:auto 0 0 0;background:rgba(14,20,16,.94);border-top:1px solid var(--line);padding:16px clamp(16px,4vw,32px) 18px;display:grid;gap:10px;transform:translateY(100%);transition:transform .45s cubic-bezier(.3,.7,.2,1)}
+.sheet.open{transform:none}
+.sheet h2{margin:0;font-family:var(--f-text);font-size:18px}
+.frame{font-family:var(--f-text);font-size:clamp(17px,2.3vw,22px);line-height:2.2;margin:0}
+.slot{min-width:108px;min-height:36px;font-family:var(--f-text);font-size:18px;padding:2px 12px;margin:0 2px;border:1.5px dashed var(--muted);background:transparent;color:var(--muted);cursor:pointer;border-radius:3px;vertical-align:middle}
+.slot.filled{border-style:solid;border-color:var(--slip);background:var(--slip);color:var(--slip-ink)}
+.slot.active{border-color:var(--gold);color:var(--gold)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.result{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:14px;align-items:start}
+@media (max-width:760px){.result{grid-template-columns:minmax(0,1fr)}}
+.portrait{position:relative;aspect-ratio:3/4;background-size:cover;background-position:center;border:1px solid var(--line)}
+.portrait .type{position:absolute;left:14px;bottom:12px;font-family:var(--f-text);font-size:clamp(40px,7vw,64px);font-weight:700;line-height:1;color:var(--light);text-shadow:0 2px 16px #000}
+.card{background:var(--slip);color:var(--slip-ink);padding:18px 20px;display:grid;gap:10px}
+.card .name{font-family:var(--f-text);font-size:26px;font-weight:700;color:var(--blood)}
+.card p{margin:0;font-family:var(--f-text);font-size:17px;line-height:1.6}
+.bar{display:flex;height:14px;border-radius:2px;overflow:hidden;background:#d8cdb2}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#5e5546}
+.legend b{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+.map{background:var(--panel);border:1px solid var(--line);padding:12px;display:grid;gap:6px}
+.map svg{width:100%;height:auto;display:block}
+.ax{font-family:var(--f-ui);font-size:11px;fill:var(--muted)}
+.quad{font-family:var(--f-text);font-size:13px;fill:#5d7464}
+.near{font-family:var(--f-text);font-size:17px;line-height:1.6;margin:0}
+.fake,.foot{font-size:12px;color:var(--muted);margin:0}
+.foot{text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="goal"><b>Whose Voice?</b><span>The magistrate wants one sentence: who killed him, with what, and why. Nobody will tell you if you're right.</span></header>
+  <section class="stage" id="stage" aria-live="polite">
+    <div class="bg" id="bg"></div>
+    <canvas class="leaves" id="leaves" aria-hidden="true"></canvas>
+    <div class="shade"></div>
+    <div id="layer"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-label="Your sentence for the magistrate">
+      <h2>Your sentence for the magistrate</h2>
+      <p class="frame">The samurai died by the hand of <button class="slot" data-s="who" type="button"></button>, with the <button class="slot" data-s="what" type="button"></button>, because of <button class="slot" data-s="why" type="button"></button>.</p>
+      <p class="hint" id="vhint">Tap a blank, then a slip from your pocket. Any slip can go anywhere.</p>
+      <div class="row ctl"><button class="btn ghost" id="close" type="button">Keep looking</button><button class="btn" id="hand" type="button">Hand it in</button></div>
+    </div>
+  </section>
+  <section class="pocket" aria-label="Your pocket">
+    <div class="lab"><span>Your pocket · words you picked up, and who said them</span><span id="count">empty</span></div>
+    <div class="slips" id="slips"></div>
+  </section>
+  <div id="after"></div>
+  <p class="foot">Text: Ryūnosuke Akutagawa, 藪の中 <i>In a Grove</i> (1922), public domain, excerpted and translated for this prototype. Pictures generated with FLUX schnell through the ITP Replicate proxy.</p>
+</div>
+
+<script>
+const IMG={grove:"img/grove.webp",body:"img/body.webp",bandit:"img/bandit.webp",wife:"img/wife.webp",dead:"img/dead.webp",magistrate:"img/magistrate.webp",woodcutter:"img/woodcutter.webp"};
+const SPEAKERS={woodcutter:{label:"the woodcutter",side:"E",color:"#9c8a58"},bandit:{label:"Tajōmaru",side:"E",color:"#b8433a"},
+  wife:{label:"the wife",side:"I",color:"#6c8fb3"},dead:{label:"the dead man",side:"I",color:"#9a86bb"}};
+const WORDS={rope:"thing",comb:"thing",chest:"thing",fight:"thing",sword:"thing",dagger:"thing",shame:"feel",eyes:"feel",contempt:"feel",jealousy:"feel",someone:"feel"};
+const NAMES={bandit:"Tajōmaru",wife:"the wife",dead:"the dead man himself"};
+const DOORS={
+  body:{who:"woodcutter",label:"the body",x:30,y:78,title:"The woodcutter who found him",lines:[
+    "He lay face up, one wound through the [chest].",
+    "No sword. Only a [rope] at the foot of the cedar, and a [comb].",
+    "The leaves were trampled all around. There had been a [fight]."]},
+  bandit:{who:"bandit",label:"the bandit",x:50,y:50,title:"Tajōmaru, the bandit · his confession",lines:[
+    "It was [I] who killed the man.",
+    "She cried: to be seen in such [shame] by two men is worse than death.",
+    "I cut his [rope] and told him to [fight]. My [sword] went through his chest."]},
+  wife:{who:"wife",label:"the wife",x:76,y:64,title:"The wife · her confession at Kiyomizu Temple",lines:[
+    "In my husband's [eyes] there was no anger. Only a cold [contempt].",
+    "You have seen my [shame]. I cannot leave you alive.",
+    "Half in a dream, [I] drove the [dagger] into his chest."]},
+  dead:{who:"dead",label:"the dead man",x:64,y:24,title:"The dead man · speaking through a medium",lines:[
+    "She looked at him, enchanted. I writhed with [jealousy].",
+    "[I] took up the [dagger] she dropped, and drove it into my own chest.",
+    "Then [someone] came softly, and drew it out."]}
+};
+const TEMPER={
+  NF:{name:"The Medium",img:"dead",text:"You listen for the voice nobody else can hear. To you, the truth lives in what people felt, not in what they held."},
+  NT:{name:"The Magistrate",img:"magistrate",text:"You weigh every story against the others and trust none of them completely. You built your truth like a ruling."},
+  SP:{name:"Tajōmaru",img:"bandit",text:"You believe what happened in the moment: the blade, the fight, the body on the leaves. You hand in your truth without looking back."},
+  SJ:{name:"The Woodcutter",img:"woodcutter",text:"You trust what was left on the ground. The rope, the comb, the wound. Feelings can lie; objects stay where they fell."}};
+const SAMPLES=[["Tajōmaru","sword","fight",-.8,-.7],["Tajōmaru","sword","shame",-.5,.1],["the wife","dagger","contempt",.5,.5],["the wife","dagger","shame",.6,.3],
+ ["the dead man himself","dagger","jealousy",.8,.6],["someone","dagger","jealousy",.7,.9],["someone","rope","shame",.1,.7],["Tajōmaru","rope","fight",-.7,-.9],
+ ["the wife","rope","eyes",.4,.4],["the dead man himself","dagger","shame",.6,.2],["Tajōmaru","dagger","contempt",-.2,.3],["someone","comb","eyes",.2,.8],
+ ["Tajōmaru","sword","jealousy",-.5,0],["the wife","sword","fight",.1,-.5],["the dead man himself","dagger","contempt",.9,.5],["Tajōmaru","chest","fight",-.6,-.8]];
+
+const $=s=>document.querySelector(s),layer=$("#layer"),bg=$("#bg");
+const still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let pocket=[],opened=new Set(),slots={who:null,what:null,why:null},active="who";
+Object.values(IMG).forEach(src=>{const i=new Image();i.src=src});
+function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e}
+function setBg(key,kb){bg.style.backgroundImage=`url(${IMG[key]})`;bg.classList.remove("kb");void bg.offsetWidth;if(kb&&!still)bg.classList.add("kb");bg.style.transform=""}
+
+/* falling bamboo leaves */
+const cv=$("#leaves"),cx=cv.getContext("2d");let leaves=[];
+function sizeCv(){cv.width=cv.clientWidth*devicePixelRatio;cv.height=cv.clientHeight*devicePixelRatio}
+sizeCv();addEventListener("resize",sizeCv);
+for(let i=0;i<26;i++)leaves.push({x:Math.random(),y:Math.random(),s:.4+Math.random()*.8,v:.0006+Math.random()*.0012,a:Math.random()*6.28,w:.6+Math.random()})
+function drawLeaves(){cx.clearRect(0,0,cv.width,cv.height);leaves.forEach(l=>{l.y+=l.v;l.a+=.02*l.w;l.x+=Math.sin(l.a)*.0006;if(l.y>1.05){l.y=-.05;l.x=Math.random()}
+  const X=l.x*cv.width,Y=l.y*cv.height,S=14*l.s*devicePixelRatio;cx.save();cx.translate(X,Y);cx.rotate(Math.sin(l.a)*.9);cx.fillStyle="rgba(183,170,110,.55)";cx.beginPath();cx.ellipse(0,0,S,S*.22,0,0,6.28);cx.fill();cx.restore()});
+  if(!still)requestAnimationFrame(drawLeaves)}
+drawLeaves();
+$("#stage").addEventListener("pointermove",e=>{if(still||layer.dataset.view!=="grove")return;const r=e.currentTarget.getBoundingClientRect();const dx=(e.clientX-r.left)/r.width-.5,dy=(e.clientY-r.top)/r.height-.5;bg.style.transform=`translate(${-dx*18}px,${-dy*12}px) scale(1.03)`});
+
+function grove(){
+  layer.dataset.view="grove";setBg("grove");closeSheet();
+  layer.innerHTML=`<div class="cap"><small>A grove off the Yamashina road · dusk</small>A samurai lies dead here. Four people say what happened. Open a word.</div>`;
+  Object.entries(DOORS).forEach(([k,d])=>{const b=el("button","door"+(opened.has(k)?" seen":""),d.label);b.type="button";b.style.left=d.x+"%";b.style.top=d.y+"%";b.onclick=()=>enter(k,b);layer.append(b)});
+  const s=el("div","sub");s.innerHTML=`<div class="ctl"><span class="tap">${opened.size}/4 doors opened</span><button class="btn" type="button" id="write">Write your sentence</button></div>`;
+  layer.append(s);$("#write").onclick=openSheet;
+}
+function enter(k,btn){
+  opened.add(k);const r=btn.getBoundingClientRect(),z=el("div","zoom",btn.textContent);
+  z.style.left=r.left+"px";z.style.top=r.top+"px";z.style.fontSize=getComputedStyle(btn).fontSize;document.body.append(z);
+  const tx=innerWidth/2-r.left-r.width/2,ty=innerHeight/2-r.top-r.height/2;
+  layer.animate([{opacity:1},{opacity:0}],{duration:still?1:350,fill:"forwards"});
+  const a=still?null:z.animate([{transform:"translate(0,0) scale(1)",opacity:1,filter:"blur(0)"},{transform:`translate(${tx}px,${ty}px) scale(10)`,opacity:0,filter:"blur(8px)"}],{duration:850,easing:"cubic-bezier(.5,0,.2,1)"});
+  bg.animate([{opacity:1},{opacity:0}],{duration:still?1:500,fill:"forwards"});
+  setTimeout(()=>{setBg(k,true);bg.animate([{opacity:0},{opacity:1}],{duration:still?1:700,fill:"forwards"});scene(k);layer.animate([{opacity:0},{opacity:1}],{duration:still?1:500,fill:"forwards"})},still?0:520);
+  if(a)a.onfinish=()=>z.remove();else z.remove();
+}
+function scene(k){
+  const D=DOORS[k];let n=0;layer.dataset.view="scene";
+  layer.innerHTML=`<div class="cap"><small>${D.title}</small></div><div class="sub"><p class="say" id="say"></p><div class="ctl"><span class="tap" id="tap"></span><span><button class="btn ghost" id="back" type="button">Back to the grove</button> <button class="btn" id="next" type="button">Next</button></span></div></div>`;
+  const show=()=>{const p=$("#say");p.classList.remove("in");
+    setTimeout(()=>{p.innerHTML=D.lines[n].replace(/\[(.+?)\]/g,(m,w)=>`<button class="grab${pocket.some(s=>s.id===k+":"+w)?" got":""}" type="button" data-w="${w}">${w}</button>`);
+      p.querySelectorAll(".grab").forEach(g=>g.onclick=()=>pick(k,g));p.classList.add("in");
+      $("#tap").textContent=`${n+1} / ${D.lines.length} · tap a gold word to pick it up`;
+      $("#next").textContent=n<D.lines.length-1?"Next":"Back to the grove";},still?0:250)};
+  $("#next").onclick=()=>{if(n<D.lines.length-1){n++;show()}else grove()};
+  $("#back").onclick=grove;show();
+}
+function pick(k,g){
+  const w=g.dataset.w,id=k+":"+w;if(pocket.some(p=>p.id===id))return;
+  const text=w==="I"?NAMES[k]:w;pocket.push({id,text,src:DOORS[k].who,kind:w==="I"?"name":WORDS[w],r:(Math.random()*5-2.5).toFixed(1)+"deg"});
+  g.classList.add("got");
+  const from=g.getBoundingClientRect(),to=$("#slips").getBoundingClientRect(),f=el("div","fly",text);document.body.append(f);
+  f.style.left=from.left+"px";f.style.top=from.top+"px";
+  const end=f.animate([{transform:"translate(0,0) scale(1.2)"},{transform:`translate(${to.left+12-from.left}px,${to.top+4-from.top}px) scale(.9)`}],{duration:still?1:650,easing:"cubic-bezier(.4,0,.2,1)"});
+  end.onfinish=()=>{f.remove();drawPocket(id)};
+}
+function drawPocket(fresh){
+  const box=$("#slips");box.innerHTML="";
+  pocket.forEach(s=>{const c=el("button","chip"+(s.id===fresh?" new":""));c.type="button";c.dataset.id=s.id;c.style.setProperty("--r",s.r);
+    c.innerHTML=`${s.text}<small>${SPEAKERS[s.src].label}</small>`;c.onclick=()=>useSlip(s.id);box.append(c)});
+  $("#count").textContent=pocket.length?pocket.length+" slip"+(pocket.length>1?"s":""):"empty";paintSlots();
+}
+function openSheet(){$("#sheet").classList.add("open");$("#vhint").textContent=pocket.length?"Tap a blank, then a slip from your pocket. Any slip can go anywhere.":"Your pocket is empty. Open a word in the grove first.";paintSlots()}
+function closeSheet(){$("#sheet").classList.remove("open")}
+$("#close").onclick=closeSheet;
+document.querySelectorAll(".slot").forEach(s=>s.onclick=()=>{const k=s.dataset.s;if(slots[k])slots[k]=null;active=k;paintSlots()});
+function paintSlots(){
+  document.querySelectorAll(".slot").forEach(s=>{const k=s.dataset.s,v=slots[k];s.textContent=v?v.text:"";s.classList.toggle("filled",!!v);s.classList.toggle("active",active===k&&!v)});
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("used",Object.values(slots).some(v=>v&&v.id===c.dataset.id)));
+}
+function useSlip(id){
+  if(!$("#sheet").classList.contains("open")){if(layer.dataset.view==="grove")openSheet();else return}
+  const s=pocket.find(p=>p.id===id);for(const k in slots)if(slots[k]&&slots[k].id===id)slots[k]=null;
+  const k=active&&!slots[active]?active:["who","what","why"].find(k=>!slots[k]);
+  if(!k){$("#vhint").textContent="Every blank is full. Tap a blank to empty it.";return}
+  slots[k]=s;active=["who","what","why"].find(k=>!slots[k])||null;paintSlots();
+}
+$("#hand").onclick=()=>{
+  const used=["who","what","why"].map(k=>slots[k]);
+  if(used.some(v=>!v)){$("#vhint").textContent="Fill all three blanks first. Any slips will do.";return}
+  let e=0,i=0,th=0,fe=0;used.forEach(s=>{SPEAKERS[s.src].side==="E"?e++:i++;if(s.kind==="thing")th++;else if(s.kind==="feel")fe++});
+  const SN=th>fe?"S":"N",TF=slots.why.kind==="feel"?"F":"T",JP=(opened.size>=4||slots.who.text==="someone")?"P":"J";
+  const type=(e>i?"E":"I")+SN+TF+JP,T=TEMPER[SN==="N"?"N"+TF:"S"+JP];
+  const share={};used.forEach(s=>share[s.src]=(share[s.src]||0)+1);
+  const x=(i-e)/3,y=(fe-th)/3,near=SAMPLES.map(s=>[s,Math.hypot(s[3]-x,s[4]-y)]).sort((a,b)=>a[1]-b[1])[0][0];
+  closeSheet();layer.dataset.view="end";setBg(T.img==="bandit"||T.img==="dead"?T.img:"grove",true);
+  layer.innerHTML=`<div class="cap"><small>The magistrate takes your sentence, and says nothing</small>“The samurai died by the hand of ${slots.who.text}, with the ${slots.what.text}, because of ${slots.why.text}.”</div>`;
+  const P=(vx,vy)=>[200+vx*150,150-vy*110],[mx,my]=P(x+(Math.random()-.5)*.08,y+(Math.random()-.5)*.08);
+  $("#after").innerHTML=`<div class="result">
+   <div class="portrait" style="background-image:url(${IMG[T.img]})"><div class="type">${type}</div></div>
+   <div style="display:grid;gap:12px">
+    <div class="card"><div class="name">${T.name}</div><p>${T.text}</p>
+     <div style="font-size:12px;color:#5e5546">Your truth is made of the words of</div>
+     <div class="bar">${Object.entries(share).map(([k,n])=>`<i style="width:${n/3*100}%;background:${SPEAKERS[k].color}"></i>`).join("")}</div>
+     <div class="legend">${Object.entries(share).map(([k,n])=>`<span><b style="background:${SPEAKERS[k].color}"></b>${SPEAKERS[k].label} ${Math.round(n/3*100)}%</span>`).join("")}</div></div>
+    <div class="map"><svg viewBox="0 0 400 300" role="img" aria-label="Map of readers' truths">
+     <line x1="40" y1="150" x2="360" y2="150" stroke="#2c3d33"/><line x1="200" y1="30" x2="200" y2="270" stroke="#2c3d33"/>
+     <text class="ax" x="40" y="168">said out loud</text><text class="ax" x="360" y="168" text-anchor="end">said in private</text>
+     <text class="ax" x="206" y="40">feelings</text><text class="ax" x="206" y="266">things</text>
+     <text class="quad" x="60" y="70">The Magistrate</text><text class="quad" x="300" y="70">The Medium</text><text class="quad" x="60" y="240">Tajōmaru</text><text class="quad" x="285" y="240">The Woodcutter</text>
+     ${SAMPLES.map(s=>{const [px,py]=P(s[3],s[4]);return `<circle cx="${px}" cy="${py}" r="4.5" fill="#5d7464"/>`}).join("")}
+     <circle cx="${mx}" cy="${my}" r="12" fill="none" stroke="#e2bd6c" stroke-width="2"><animate attributeName="r" values="8;14;8" dur="2s" repeatCount="indefinite"/></circle><circle cx="${mx}" cy="${my}" r="6" fill="#e2bd6c"/><text class="ax" x="${mx+12}" y="${my-10}" style="fill:#e2bd6c">you</text></svg>
+     <p class="hint">The reader closest to you wrote:</p>
+     <p class="near">“…by the hand of ${near[0]}, with the ${near[1]}, because of ${near[2]}.”</p>
+     <p class="fake">Grey dots are sample answers written for this prototype, not real players. In the final version, everyone who plays lands here, placed by sentence embeddings.</p>
+     <div><button class="btn" type="button" id="again">Try another truth</button></div></div>
+   </div></div>`;
+  $("#again").onclick=()=>{slots={who:null,what:null,why:null};active="who";$("#after").innerHTML="";grove();paintSlots();$("#stage").scrollIntoView({behavior:"smooth"})};
+  $("#after").scrollIntoView({behavior:still?"auto":"smooth",block:"start"});
+};
+grove();drawPocket();
+</script>
